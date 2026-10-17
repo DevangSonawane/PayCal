@@ -27,6 +27,12 @@ class BatchDetailScreen extends StatefulWidget {
 
 class _BatchDetailScreenState extends State<BatchDetailScreen> {
   @override
+  void initState() {
+    super.initState();
+    _postDueRecurringPayments();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final expenses =
         MockData.expenses
@@ -213,45 +219,57 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
           top: Radius.circular(AppRadii.sheetTop),
         ),
       ),
+      isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            AppSpacing.lg,
-            AppSpacing.xl,
-            AppSpacing.xxl,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ActionOption(
-                icon: Icons.payments_outlined,
-                title: 'Add money',
-                subtitle: 'Record money paid to someone',
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _showAddMoneySheet();
-                },
-              ),
-              _ActionOption(
-                icon: Icons.receipt_long_outlined,
-                title: 'Add expense',
-                subtitle: 'Record something you paid for',
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _showExpenseSheet(splitEqually: false);
-                },
-              ),
-              _ActionOption(
-                icon: Icons.call_split_outlined,
-                title: 'Split bill',
-                subtitle: 'Divide a cost equally with the group',
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _showExpenseSheet(splitEqually: true);
-                },
-              ),
-            ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.xxl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ActionOption(
+                  icon: Icons.payments_outlined,
+                  title: 'Add money',
+                  subtitle: 'Record money paid to someone',
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _showAddMoneySheet();
+                  },
+                ),
+                _ActionOption(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Add expense',
+                  subtitle: 'Record something you paid for',
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _showExpenseSheet(splitEqually: false);
+                  },
+                ),
+                _ActionOption(
+                  icon: Icons.call_split_outlined,
+                  title: 'Split bill',
+                  subtitle: 'Divide a cost equally with the group',
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _showExpenseSheet(splitEqually: true);
+                  },
+                ),
+                _ActionOption(
+                  icon: Icons.person_outline,
+                  title: 'Set up recurring transfer',
+                  subtitle: 'Send money to a member on a schedule',
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _showRecurringTransferSheet();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -388,6 +406,150 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     );
   }
 
+  void _showRecurringTransferSheet() {
+    final amount = TextEditingController();
+    final description = TextEditingController();
+    var category = widget.batch.categories.first;
+    var frequency = RecurringFrequency.monthly;
+    var dueDate = DateTime.now();
+    var recipientId = widget.batch.members
+        .firstWhere((member) => member.id != MockData.meId)
+        .id;
+
+    showAppBottomSheet(
+      context: context,
+      title: 'Set up recurring transfer',
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AmountField(currencySymbol: '₹', controller: amount),
+            const SizedBox(height: AppSpacing.lg),
+            AppTextField(
+              label: 'What is this for?',
+              hint: 'Pocket money, repayment…',
+              controller: description,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            DropdownButtonFormField<String>(
+              initialValue: recipientId,
+              decoration: _selectionDecoration('Send to'),
+              isExpanded: true,
+              borderRadius: BorderRadius.circular(AppRadii.tile),
+              dropdownColor: AppColors.surfaceRaised,
+              menuMaxHeight: 240,
+              items: widget.batch.members
+                  .where((member) => member.id != MockData.meId)
+                  .map(
+                    (member) => DropdownMenuItem(
+                      value: member.id,
+                      child: Text(member.name),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setSheetState(() => recipientId = value!),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _PickerTile(
+              label: 'First payment date',
+              value: '${dueDate.day}/${dueDate.month}/${dueDate.year}',
+              onTap: () async {
+                final selected = await showDatePicker(
+                  context: context,
+                  firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                  initialDate: dueDate,
+                  lastDate: DateTime.now().add(const Duration(days: 3650)),
+                );
+                if (selected != null) setSheetState(() => dueDate = selected);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _PickerTile(
+              label: 'Repeats',
+              value: frequency == RecurringFrequency.monthly
+                  ? 'Every month'
+                  : 'Every year',
+              onTap: () => setSheetState(() {
+                frequency = frequency == RecurringFrequency.monthly
+                    ? RecurringFrequency.yearly
+                    : RecurringFrequency.monthly;
+              }),
+            ),
+            Text(
+              'A paid activity will be posted to this group on each due date.',
+              style: AppTypography.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+      footer: PrimaryButton(
+        label: 'Save recurring transfer',
+        onPressed: () {
+          final minor = Money.tryParseToMinor(amount.text);
+          if (minor == null || minor <= 0) {
+            showAppToast(context, 'Enter an amount first');
+            return;
+          }
+          if (description.text.trim().isEmpty) {
+            showAppToast(context, 'Add a short description');
+            return;
+          }
+          MockData.recurringPayments.add(
+            RecurringPayment(
+              id: 'r${MockData.recurringPayments.length + 1}',
+              batchId: widget.batch.id,
+              description: description.text.trim(),
+              amountMinor: minor,
+              currency: widget.batch.currency,
+              category: category,
+              frequency: frequency,
+              nextDueAt: dueDate,
+              recipientId: recipientId,
+            ),
+          );
+          setState(_postDueRecurringPayments);
+          Navigator.of(context).pop();
+          showAppToast(context, 'Recurring transfer saved');
+        },
+      ),
+    );
+  }
+
+  void _postDueRecurringPayments() {
+    final now = DateTime.now();
+    for (final payment in MockData.recurringPayments.where(
+      (item) => item.batchId == widget.batch.id,
+    )) {
+      while (!payment.nextDueAt.isAfter(now)) {
+        MockData.expenses.add(
+          Expense(
+            id: 'rec-${payment.id}-${payment.nextDueAt.millisecondsSinceEpoch}',
+            batchId: payment.batchId,
+            description:
+                '${payment.description} to ${MockData.memberName(payment.recipientId)}',
+            totalMinor: payment.amountMinor,
+            currency: payment.currency,
+            payerId: MockData.meId,
+            shares: {MockData.meId: payment.amountMinor},
+            date: payment.nextDueAt,
+            category: payment.category,
+          ),
+        );
+        payment.nextDueAt = _nextOccurrence(
+          payment.nextDueAt,
+          payment.frequency,
+        );
+      }
+    }
+  }
+
+  DateTime _nextOccurrence(DateTime date, RecurringFrequency frequency) =>
+      frequency == RecurringFrequency.monthly
+      ? DateTime(date.year, date.month + 1, date.day)
+      : DateTime(date.year + 1, date.month, date.day);
+
   Map<String, int> _equalShares(int amount) {
     final share = amount ~/ widget.batch.members.length;
     final remainder = amount % widget.batch.members.length;
@@ -468,6 +630,61 @@ class _ActionOption extends StatelessWidget {
       style: AppTypography.body.copyWith(color: AppColors.textSecondary),
     ),
     onTap: onTap,
+  );
+}
+
+class _PickerTile extends StatelessWidget {
+  const _PickerTile({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: AppColors.surface,
+    borderRadius: BorderRadius.circular(AppRadii.tile),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.tile),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    value,
+                    style: AppTypography.label.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              'Tap to change',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 }
 

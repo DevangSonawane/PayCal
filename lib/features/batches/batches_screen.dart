@@ -18,8 +18,20 @@ class BatchesScreen extends StatelessWidget {
 
   int _netFor(Batch b) {
     final exps = MockData.expenses.where((e) => e.batchId == b.id).toList();
-    final inputs = exps.map((e) => ExpenseInput(totalMinor: e.totalMinor, payerId: e.payerId, shares: e.shares)).toList();
-    return BalanceEngine.nets(inputs, b.members.map((m) => m.id).toList())[MockData.meId] ?? 0;
+    final inputs = exps
+        .map(
+          (e) => ExpenseInput(
+            totalMinor: e.totalMinor,
+            payerId: e.payerId,
+            shares: e.shares,
+          ),
+        )
+        .toList();
+    return BalanceEngine.nets(
+          inputs,
+          b.members.map((m) => m.id).toList(),
+        )[MockData.meId] ??
+        0;
   }
 
   @override
@@ -47,28 +59,53 @@ class BatchesScreen extends StatelessWidget {
       backgroundColor: AppColors.bg,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, 120),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.xl,
+            120,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Batches', style: AppTypography.headline.copyWith(color: AppColors.textPrimary)),
+              Text(
+                'Batches',
+                style: AppTypography.headline.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
-              Text('${MockData.batches.length} groups', style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+              Text(
+                '${MockData.batches.length} groups',
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xxl),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppSpacing.xxl),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(AppRadii.card)),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total across batches', style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      'Total across batches',
+                      style: AppTypography.body.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     MoneyText(
                       amount: total.abs(),
                       currency: 'INR',
                       style: AppTypography.displayAmount,
-                      direction: total > 0 ? MoneyDirection.owed : (total < 0 ? MoneyDirection.owe : null),
+                      direction: total > 0
+                          ? MoneyDirection.owed
+                          : (total < 0 ? MoneyDirection.owe : null),
                     ),
                   ],
                 ),
@@ -77,7 +114,11 @@ class BatchesScreen extends StatelessWidget {
               ...MockData.batches.map((b) {
                 final net = nets[b.id] ?? 0;
                 return GestureDetector(
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => BatchDetailScreen(batch: b))),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BatchDetailScreen(batch: b),
+                    ),
+                  ),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: AppSpacing.md),
                     padding: const EdgeInsets.all(AppSpacing.xl),
@@ -91,28 +132,75 @@ class BatchesScreen extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Expanded(child: Text(b.name, style: AppTypography.title.copyWith(color: AppColors.textPrimary))),
+                            Expanded(
+                              child: Text(
+                                b.name,
+                                style: AppTypography.title.copyWith(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
-                              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(AppRadii.chipPill)),
-                              child: Text(b.currency, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.chipPill,
+                                ),
+                              ),
+                              child: Text(
+                                b.currency,
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
-                            AvatarStack(initials: b.members.map((m) => m.initials).toList()),
+                            AvatarStack(
+                              initials: b.members
+                                  .map((m) => m.initials)
+                                  .toList(),
+                              size: 28,
+                              max: 2,
+                            ),
                             const SizedBox(width: AppSpacing.sm),
-                            Text('${b.members.length} members', style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
-                            const Spacer(),
-                            MoneyText(
-                              amount: net.abs(),
-                              currency: b.currency,
-                              direction: net > 0 ? MoneyDirection.owed : (net < 0 ? MoneyDirection.owe : null),
+                            Expanded(
+                              child: Text(
+                                '${b.members.length} members',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.body.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: AppSpacing.xs),
-                            const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 96),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: MoneyText(
+                                  amount: net.abs(),
+                                  currency: b.currency,
+                                  direction: net > 0
+                                      ? MoneyDirection.owed
+                                      : (net < 0 ? MoneyDirection.owe : null),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.textTertiary,
+                            ),
                           ],
                         ),
                       ],

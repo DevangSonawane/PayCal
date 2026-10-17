@@ -92,6 +92,8 @@ class MockData {
     ),
   ];
 
+  static final recurringPayments = <RecurringPayment>[];
+
   static final activity = <ActivityEvent>[
     ActivityEvent(
       title: 'Asha added Electricity',

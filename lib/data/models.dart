@@ -4,13 +4,18 @@ class Member {
   final String name;
   final bool isAdmin;
   String get initials {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) {
       final w = parts.first.toUpperCase();
       return w.length >= 2 ? w.substring(0, 2) : w;
     }
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
   }
 }
 
@@ -42,7 +47,13 @@ class Expense {
 }
 
 class Batch {
-  Batch({required this.id, required this.name, required this.currency, required this.members, required this.categories});
+  Batch({
+    required this.id,
+    required this.name,
+    required this.currency,
+    required this.members,
+    required this.categories,
+  });
   final String id;
   final String name;
   final String currency;
@@ -50,8 +61,39 @@ class Batch {
   final List<String> categories;
 }
 
+class RecurringPayment {
+  RecurringPayment({
+    required this.id,
+    required this.batchId,
+    required this.description,
+    required this.amountMinor,
+    required this.currency,
+    required this.category,
+    required this.frequency,
+    required this.nextDueAt,
+    required this.recipientId,
+  });
+
+  final String id;
+  final String batchId;
+  final String description;
+  final int amountMinor;
+  final String currency;
+  final String category;
+  final RecurringFrequency frequency;
+  final String recipientId;
+  DateTime nextDueAt;
+}
+
+enum RecurringFrequency { monthly, yearly }
+
 class ActivityEvent {
-  ActivityEvent({required this.title, required this.subtitle, required this.time, required this.batchName});
+  ActivityEvent({
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.batchName,
+  });
   final String title;
   final String subtitle;
   final String time;
