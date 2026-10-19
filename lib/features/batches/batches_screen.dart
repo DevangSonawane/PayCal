@@ -113,7 +113,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
     return Scaffold(
       backgroundColor: _BPalette.current.page,
       body: CustomPaint(
-        painter: const _StripePainter(),
+        painter: _StripePainter(),
         child: SizedBox.expand(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
@@ -126,7 +126,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _TopBar(onCreate: _onCreate),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 Row(
                   children: [
                     Expanded(
@@ -137,7 +137,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
                         icon: Icons.south_west_rounded,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: _StatCard(
                         label: 'To pay',
@@ -148,11 +148,11 @@ class _BatchesScreenState extends State<BatchesScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 Row(
                   children: [
-                    const WedgeBullet(),
-                    const SizedBox(width: 8),
+                    WedgeBullet(),
+                    SizedBox(width: 8),
                     Text(
                       'Your batches',
                       style: AppTypography.title.copyWith(
@@ -160,7 +160,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
                         color: _BPalette.current.ink,
                       ),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     Text(
                       '${visible.length} shown',
                       style: AppTypography.caption.copyWith(
@@ -169,11 +169,11 @@ class _BatchesScreenState extends State<BatchesScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _FilterRow(selected: filter, onChanged: _setFilter),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 if (visible.isEmpty)
-                  const _NoMatches()
+                  _NoMatches()
                 else
                   for (final b in visible)
                     _BatchCard(
@@ -199,21 +199,14 @@ class _BatchesScreenState extends State<BatchesScreen> {
 
 class _BPalette {
   static AppPalette get current => AppPalette.current;
-  static const page = Color(0xFFFFFEFC),
-      lime = Color(0xFFD8FF00),
-      ink = Color(0xFF0A0A0A),
-      pink = Color(0xFFF0477F),
-      grey = Color(0xFF8A8A8A),
-      chip = Color(0xFFF1F1F4),
-      hairline = Color(0xFFE6E6EA);
 }
 
 class _StripePainter extends CustomPainter {
-  const _StripePainter();
+  _StripePainter();
   @override
   void paint(Canvas c, Size s) {
     final p = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [Color(0x080A0A0A), Color(0x080A0A0A), Color(0x000A0A0A)],
@@ -241,17 +234,13 @@ class _TopBar extends StatelessWidget {
         Container(
           width: 34,
           height: 34,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _BPalette.current.ink,
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            Icons.layers_outlined,
-            color: Colors.white,
-            size: 19,
-          ),
+          child: Icon(Icons.layers_outlined, color: Colors.white, size: 19),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Text(
           'Batches',
           style: AppTypography.title.copyWith(
@@ -260,12 +249,12 @@ class _TopBar extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const Spacer(),
+        Spacer(),
         InkWell(
           onTap: onCreate,
           borderRadius: BorderRadius.circular(18),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: _BPalette.current.pink,
               border: Border.all(color: _BPalette.current.ink, width: 1.5),
@@ -298,9 +287,9 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
+    padding: EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppPalette.current.card,
       borderRadius: BorderRadius.circular(22),
       border: Border.all(color: _BPalette.current.ink, width: 1.5),
     ),
@@ -317,17 +306,21 @@ class _StatCard extends StatelessWidget {
           child: Icon(
             icon,
             size: 18,
-            color: dot == _BPalette.current.pink ? Colors.white : _BPalette.current.ink,
+            color: dot == _BPalette.current.pink
+                ? Colors.white
+                : _BPalette.current.ink,
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: AppTypography.caption.copyWith(color: _BPalette.current.grey),
+                style: AppTypography.caption.copyWith(
+                  color: _BPalette.current.grey,
+                ),
               ),
               FittedBox(
                 fit: BoxFit.scaleDown,
@@ -366,7 +359,7 @@ class _FilterRow extends StatelessWidget {
     child: ListView(
       scrollDirection: Axis.horizontal,
       clipBehavior: Clip.none,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.symmetric(horizontal: 4),
       children: [
         for (final f in _Filter.values)
           Padding(
@@ -410,7 +403,7 @@ class _BatchCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Material(
-        color: Colors.white,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(24),
         child: InkWell(
           onTap: onTap,
@@ -486,7 +479,7 @@ class _BatchCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                const Divider(height: 1, color: _BPalette.current.hairline),
+                Divider(height: 1, color: _BPalette.current.hairline),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -509,7 +502,7 @@ class _BatchCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.chevron_right, color: _BPalette.current.ink),
+                    Icon(Icons.chevron_right, color: _BPalette.current.ink),
                   ],
                 ),
               ],

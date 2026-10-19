@@ -43,7 +43,9 @@ class PrimaryButton extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
               side: BorderSide(
-                color: disabled ? AppPalette.current.hairline : AppPalette.current.ink,
+                color: disabled
+                    ? AppPalette.current.hairline
+                    : AppPalette.current.ink,
                 width: 1.5,
               ),
             ),

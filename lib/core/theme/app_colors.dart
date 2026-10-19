@@ -100,15 +100,16 @@ class AppPalette {
     required this.border,
     required this.bg,
     required this.surface,
+    required this.card,
     required this.text,
     required this.textSecondary,
     required this.textTertiary,
     required this.owedText,
     required this.oweText,
-    this.owedTint,
-    this.oweTint,
-    this.pendingText,
-    this.pendingTint,
+    required this.owedTint,
+    required this.oweTint,
+    required this.pendingText,
+    required this.pendingTint,
     required this.teal,
     required this.scrim,
   });
@@ -124,15 +125,16 @@ class AppPalette {
   final Color border;
   final Color bg;
   final Color surface;
+  final Color card;
   final Color text;
   final Color textSecondary;
   final Color textTertiary;
   final Color owedText;
   final Color oweText;
-  final Color? owedTint;
-  final Color? oweTint;
-  final Color? pendingText;
-  final Color? pendingTint;
+  final Color owedTint;
+  final Color oweTint;
+  final Color pendingText;
+  final Color pendingTint;
   final Color teal;
   final Color scrim;
 
@@ -148,6 +150,7 @@ class AppPalette {
     border: Color(0xFFECECE8),
     bg: Color(0xFFFFFFFF),
     surface: Color(0xFFF7F7F5),
+    card: Color(0xFFFFFFFF),
     text: Color(0xFF111111),
     textSecondary: Color(0xFF5F5F5B),
     textTertiary: Color(0xFF767672),
@@ -173,6 +176,7 @@ class AppPalette {
     border: Color(0xFF2A2A28),
     bg: Color(0xFF161615),
     surface: Color(0xFF1E1E1C),
+    card: Color(0xFF161615),
     text: Color(0xFFF5F5F2),
     textSecondary: Color(0xFFB5B5AE),
     textTertiary: Color(0xFF8A8A84),

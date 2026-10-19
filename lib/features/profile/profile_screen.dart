@@ -25,15 +25,14 @@ const _currencies = ['INR', 'USD', 'EUR', 'GBP'];
 
 class _Palette {
   static AppPalette get current => AppPalette.current;
-  static const page = Color(0xFFFFFEFC), ink = Color(0xFF0A0A0A);
 }
 
 class _StripePainter extends CustomPainter {
-  const _StripePainter();
+  _StripePainter();
   @override
   void paint(Canvas c, Size s) {
     final p = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [Color(0x080A0A0A), Color(0x080A0A0A), Color(0x000A0A0A)],
@@ -74,7 +73,7 @@ class ProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(label: 'Display name', controller: name),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           AppTextField(label: 'Email', controller: email),
         ],
       ),
@@ -108,13 +107,17 @@ class ProfileScreen extends StatelessWidget {
           AppSettings.instance.userEmail.contains('@')
               ? Text(
                   "${AppSettings.instance.userName} · ${AppSettings.instance.userEmail}",
-                  style: AppTypography.body.copyWith(color: AppPalette.current.ink),
+                  style: AppTypography.body.copyWith(
+                    color: AppPalette.current.ink,
+                  ),
                 )
               : Text(
                   'Signed in as ${AppSettings.instance.userName}.',
-                  style: AppTypography.body.copyWith(color: AppPalette.current.ink),
+                  style: AppTypography.body.copyWith(
+                    color: AppPalette.current.ink,
+                  ),
                 ),
-          const SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.lg),
           Text(
             'CURRENCY',
             style: AppTypography.caption.copyWith(
@@ -123,7 +126,7 @@ class ProfileScreen extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
@@ -141,6 +144,29 @@ class ProfileScreen extends StatelessWidget {
       ),
       footer: PrimaryButton(
         label: 'Looks good',
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  Future<void> _appearance(BuildContext context) {
+    return showPopCard<void>(
+      context: context,
+      title: 'Appearance',
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ToggleRow(
+            label: 'Dark mode',
+            support: 'Night-friendly ink and paper',
+            value: AppSettings.instance.darkMode,
+            onChanged: (v) => AppSettings.instance.update(darkMode: v),
+          ),
+        ],
+      ),
+      footer: PrimaryButton(
+        label: 'Done',
         onPressed: () => Navigator.of(context).pop(),
       ),
     );
@@ -183,10 +209,12 @@ class ProfileScreen extends StatelessWidget {
             value: AppSettings.instance.amountHidden,
             onChanged: (v) => AppSettings.instance.update(amountHidden: v),
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             'Never sell your data. Your spends stay between the people in the batch.',
-            style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+            style: AppTypography.caption.copyWith(
+              color: AppPalette.current.grey,
+            ),
           ),
         ],
       ),
@@ -221,8 +249,8 @@ class ProfileScreen extends StatelessWidget {
         children: [
           for (final (b, net) in rows)
             Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-              padding: const EdgeInsets.all(AppSpacing.md),
+              margin: EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: net == 0 ? AppPalette.current.lime : Colors.white,
                 borderRadius: BorderRadius.circular(18),
@@ -285,16 +313,18 @@ class ProfileScreen extends StatelessWidget {
         children: [
           for (final p in points)
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: EdgeInsets.only(bottom: AppSpacing.md),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   WedgeBullet(color: AppPalette.current.pink, size: 9),
-                  const SizedBox(width: AppSpacing.sm),
+                  SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       p,
-                      style: AppTypography.body.copyWith(color: AppPalette.current.ink),
+                      style: AppTypography.body.copyWith(
+                        color: AppPalette.current.ink,
+                      ),
                     ),
                   ),
                 ],
@@ -326,7 +356,7 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _Palette.current.page,
       body: CustomPaint(
-        painter: const _StripePainter(),
+        painter: _StripePainter(),
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.xxl,
@@ -349,17 +379,17 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         width: 34,
                         height: 34,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: _Palette.current.ink,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.face_rounded,
                           color: Colors.white,
                           size: 21,
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      SizedBox(width: AppSpacing.sm),
                       Text(
                         'Profile',
                         style: AppTypography.title.copyWith(
@@ -368,11 +398,11 @@ class ProfileScreen extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const Spacer(),
+                      Spacer(),
                       Container(
                         width: 12,
                         height: 12,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: Color(0xFFF0477F),
                           shape: BoxShape.circle,
                         ),
@@ -380,20 +410,17 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
                 GestureDetector(
                   onTap: () => _editProfile(context),
                   child: PartyTap(
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
+                      duration: Duration(milliseconds: 500),
                       curve: Curves.easeOutBack,
-                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      padding: EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: PartyMode.instance.identityCard,
-                        border: Border.all(
-                          color: const Color(0xFF0A0A0A),
-                          width: 2,
-                        ),
+                        border: Border.all(color: Color(0xFF0A0A0A), width: 2),
                         borderRadius: BorderRadius.circular(28),
                       ),
                       child: Row(
@@ -417,8 +444,8 @@ class ProfileScreen extends StatelessWidget {
                                       ),
                                     ),
                                     if (PartyMode.instance.isOn) ...[
-                                      const SizedBox(width: AppSpacing.sm),
-                                      const Icon(
+                                      SizedBox(width: AppSpacing.sm),
+                                      Icon(
                                         Icons.local_fire_department_rounded,
                                         color: AppPalette.current.lime,
                                         size: 18,
@@ -447,28 +474,31 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 GestureDetector(
                   onTap: () => _balanceBreakdown(context),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
                       vertical: AppSpacing.md,
                     ),
                     decoration: BoxDecoration(
                       color: AppPalette.current.lime,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 1.5,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.account_balance_wallet_outlined,
                           color: AppPalette.current.ink,
                           size: 22,
                         ),
-                        const SizedBox(width: AppSpacing.md),
+                        SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
                             'Balance across batches',
@@ -478,14 +508,18 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const Icon(Icons.chevron_right, color: AppPalette.current.ink),
+                        Icon(
+                          Icons.chevron_right,
+                          color: AppPalette.current.ink,
+                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
                 _group(context, 'Account', [
                   ('Account details', () => _accountDetails(context)),
+                  ('Appearance', () => _appearance(context)),
                   ('Notifications', () => _notifications(context)),
                   ('Privacy', () => _privacy(context)),
                 ]),
@@ -507,9 +541,7 @@ class ProfileScreen extends StatelessWidget {
                     }
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: Text(
                       'Delete account',
                       style: AppTypography.label.copyWith(
@@ -518,7 +550,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Divider(color: AppPalette.current.border),
+                Divider(color: AppPalette.current.border),
                 GestureDetector(
                   onTap: () async {
                     final ok = await showConfirmSheet(
@@ -529,20 +561,16 @@ class ProfileScreen extends StatelessWidget {
                     );
                     if (ok == true && context.mounted) {
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (_) => const WelcomeScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => WelcomeScreen()),
                         (r) => false,
                       );
                     }
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.logout_outlined,
                           color: AppPalette.current.text,
                           size: 20,
@@ -576,12 +604,12 @@ class ProfileScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            const WedgeBullet(color: AppPalette.current.pink, size: 11),
-            const SizedBox(width: 7),
+            WedgeBullet(color: AppPalette.current.pink, size: 11),
+            SizedBox(width: 7),
             Text(
               title.toUpperCase(),
               style: AppTypography.caption.copyWith(
-                color: const Color(0xFFF0477F),
+                color: Color(0xFFF0477F),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -592,15 +620,15 @@ class ProfileScreen extends StatelessWidget {
           return GestureDetector(
             onTap: action,
             child: Container(
-              margin: const EdgeInsets.only(top: AppSpacing.sm),
-              padding: const EdgeInsets.symmetric(
+              margin: EdgeInsets.only(top: AppSpacing.sm),
+              padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.md,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppPalette.current.card,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF0A0A0A), width: 1.5),
+                border: Border.all(color: Color(0xFF0A0A0A), width: 1.5),
               ),
               child: Row(
                 children: [
@@ -612,7 +640,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right,
                     color: AppPalette.current.textTertiary,
                   ),
@@ -621,13 +649,13 @@ class ProfileScreen extends StatelessWidget {
             ),
           );
         }),
-        const SizedBox(height: AppSpacing.lg),
+        SizedBox(height: AppSpacing.lg),
       ],
     );
   }
 }
 
-class _ToggleRow extends StatelessWidget {
+class _ToggleRow extends StatefulWidget {
   const _ToggleRow({
     required this.label,
     required this.support,
@@ -640,10 +668,23 @@ class _ToggleRow extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
+  State<_ToggleRow> createState() => _ToggleRowState();
+}
+
+class _ToggleRowState extends State<_ToggleRow> {
+  late bool value = widget.value;
+
+  @override
+  void didUpdateWidget(covariant _ToggleRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) value = widget.value;
+  }
+
+  @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(AppSpacing.md),
+    padding: EdgeInsets.all(AppSpacing.md),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppPalette.current.card,
       borderRadius: BorderRadius.circular(18),
       border: Border.all(color: AppPalette.current.ink, width: 1.5),
     ),
@@ -654,23 +695,28 @@ class _ToggleRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label,
+                widget.label,
                 style: AppTypography.label.copyWith(
                   color: AppPalette.current.ink,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               Text(
-                support,
-                style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+                widget.support,
+                style: AppTypography.caption.copyWith(
+                  color: AppPalette.current.grey,
+                ),
               ),
             ],
           ),
         ),
         GestureDetector(
-          onTap: () => onChanged(!value),
+          onTap: () {
+            setState(() => value = !value);
+            widget.onChanged(value);
+          },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
+            duration: Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
             width: 48,
             height: 28,
@@ -687,7 +733,7 @@ class _ToggleRow extends StatelessWidget {
               child: Container(
                 width: 18,
                 height: 18,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppPalette.current.ink,
                   shape: BoxShape.circle,
                 ),

@@ -216,7 +216,9 @@ class _SplitShareEditorState extends State<SplitShareEditor> {
                     ? '${Money.format(_total, widget.currency)} fully accounted for'
                     : 'Tune so everyone adds up to the total',
                 style: AppTypography.caption.copyWith(
-                  color: _compute().$2 ? AppPalette.current.teal : AppPalette.current.grey,
+                  color: _compute().$2
+                      ? AppPalette.current.teal
+                      : AppPalette.current.grey,
                   fontWeight: FontWeight.w800,
                 ),
               ),

@@ -17,7 +17,9 @@ Future<bool?> showConfirmSheet({
     title: title,
     builder: (_) => Text(
       body,
-      style: AppTypography.body.copyWith(color: AppPalette.current.textSecondary),
+      style: AppTypography.body.copyWith(
+        color: AppPalette.current.textSecondary,
+      ),
     ),
     footer: Column(
       children: [

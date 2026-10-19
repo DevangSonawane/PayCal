@@ -15,7 +15,7 @@ Future<bool> showCreateBatch(BuildContext context) async {
   final created = await showPopCard<bool>(
     context: context,
     title: 'Create batch',
-    builder: (dialogContext) => const _CreateBatchForm(),
+    builder: (dialogContext) => _CreateBatchForm(),
   );
   return created ?? false;
 }
@@ -76,7 +76,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
         hint: 'Our flat, Goa trip…',
         controller: name,
       ),
-      const SizedBox(height: AppSpacing.lg),
+      SizedBox(height: AppSpacing.lg),
       _miniLabel('Currency'),
       Wrap(
         spacing: AppSpacing.sm,
@@ -90,7 +90,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
             ),
         ],
       ),
-      const SizedBox(height: AppSpacing.lg),
+      SizedBox(height: AppSpacing.lg),
       _miniLabel('Members'),
       Wrap(
         spacing: AppSpacing.sm,
@@ -100,7 +100,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
             _memberChip(m, removable: m.id != MockData.meId),
         ],
       ),
-      const SizedBox(height: AppSpacing.md),
+      SizedBox(height: AppSpacing.md),
       AppTextField(
         label: 'Add a member',
         hint: "Friend's name…",
@@ -113,16 +113,13 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
           child: Container(
             width: 34,
             height: 34,
-            margin: const EdgeInsets.only(
-              left: AppSpacing.sm,
-              right: AppSpacing.xs,
-            ),
+            margin: EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.xs),
             decoration: BoxDecoration(
               color: AppPalette.current.lime,
               shape: BoxShape.circle,
               border: Border.all(color: AppPalette.current.ink, width: 1.5),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_add_alt_1,
               color: AppPalette.current.ink,
               size: 18,
@@ -130,13 +127,13 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
           ),
         ),
       ),
-      const SizedBox(height: AppSpacing.lg),
+      SizedBox(height: AppSpacing.lg),
       PrimaryButton(label: 'Create batch', onPressed: _create),
     ],
   );
 
   Widget _miniLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    padding: EdgeInsets.only(bottom: AppSpacing.sm),
     child: Text(
       text,
       style: AppTypography.caption.copyWith(
@@ -154,8 +151,8 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
   }) => GestureDetector(
     onTap: onTap,
     child: AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      padding: const EdgeInsets.symmetric(
+      duration: Duration(milliseconds: 160),
+      padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm + 2,
       ),
@@ -174,7 +171,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
   );
 
   Widget _memberChip(Member m, {required bool removable}) => Container(
-    padding: const EdgeInsets.symmetric(
+    padding: EdgeInsets.symmetric(
       horizontal: AppSpacing.md + 2,
       vertical: AppSpacing.sm + 2,
     ),
@@ -194,18 +191,18 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
           ),
         ),
         if (removable) ...[
-          const SizedBox(width: AppSpacing.sm),
+          SizedBox(width: AppSpacing.sm),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => members.remove(m)),
             child: Container(
               width: 18,
               height: 18,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppPalette.current.chip,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.close_rounded,
                 size: 12,
                 color: AppPalette.current.ink,

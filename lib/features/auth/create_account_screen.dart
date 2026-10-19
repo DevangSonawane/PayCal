@@ -23,7 +23,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   Future<void> _continue() async {
     setState(() => _saving = true);
-    await Future<void>.delayed(const Duration(milliseconds: 450));
+    await Future<void>.delayed(Duration(milliseconds: 450));
     if (!mounted) return;
     setState(() => _saving = false);
     Navigator.of(context).push(
@@ -42,10 +42,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.sm,
               AppSpacing.xl,
@@ -60,18 +60,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppPalette.current.card,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 1.5,
+                      ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chevron_left,
                       size: 26,
                       color: AppPalette.current.ink,
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                SizedBox(height: AppSpacing.md),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
@@ -94,7 +97,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                               child: Image.asset(
                                 'assets/onboarding/Cute Bear Finance Card Splash Screen.png',
                                 fit: BoxFit.cover,
-                                alignment: const Alignment(0, -0.16),
+                                alignment: Alignment(0, -0.16),
                               ),
                             ),
                             Positioned(
@@ -127,7 +130,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
+                        SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
                         SquigglyUnderline(
                           child: Text(
                             'Split together,\nsimply.',
@@ -138,28 +141,28 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(height: AppSpacing.md),
                         Text(
                           'One account, and your groups come along for the ride.',
                           style: AppTypography.bodyLarge.copyWith(
                             color: AppPalette.current.grey,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.xxl),
+                        SizedBox(height: AppSpacing.xxl),
                         SizedBox(
                           width: double.infinity,
                           height: AppSpacing.buttonHeight,
                           child: ElevatedButton(
                             onPressed: _saving ? null : _continue,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
+                              backgroundColor: AppPalette.current.surface,
                               foregroundColor: AppPalette.current.ink,
                               disabledBackgroundColor: AppPalette.current.chip,
                               disabledForegroundColor: AppPalette.current.grey,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(24),
-                                side: const BorderSide(
+                                side: BorderSide(
                                   color: AppPalette.current.ink,
                                   width: 1.5,
                                 ),

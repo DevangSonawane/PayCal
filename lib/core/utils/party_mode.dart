@@ -12,9 +12,9 @@ class PartyMode extends ChangeNotifier {
 
   static const List<Color> palette = [
     AppColors.indigo,
-    AppPalette.current.pink,
-    AppPalette.current.purple,
-    AppPalette.current.teal,
+    AppColors.pink,
+    AppColors.purple,
+    AppColors.teal,
     AppColors.brick,
   ];
 
@@ -27,7 +27,7 @@ class PartyMode extends ChangeNotifier {
   Color get accent => _on ? palette[_tick % palette.length] : AppColors.indigo;
 
   Color get identityCard =>
-      _on ? palette[(_tick + 1) % palette.length] : AppPalette.current.purple;
+      _on ? palette[(_tick + 1) % palette.length] : AppColors.purple;
 
   void toggle() {
     _on = !_on;

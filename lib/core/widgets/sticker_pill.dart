@@ -15,10 +15,10 @@ class StickerPill extends StatelessWidget {
     required this.selected,
     this.onTap,
     this.showCheck = false,
-    this.selectedBg = AppPalette.current.ink,
-    this.selectedFg = Colors.white,
-    this.unselectedBg = Colors.white,
-    this.unselectedFg = AppPalette.current.ink,
+    this.selectedBg,
+    this.selectedFg,
+    this.unselectedBg,
+    this.unselectedFg,
     this.horizontal = AppSpacing.lg,
     this.vertical = AppSpacing.md,
   });
@@ -27,10 +27,14 @@ class StickerPill extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
   final bool showCheck;
-  final Color selectedBg;
-  final Color selectedFg;
-  final Color unselectedBg;
-  final Color unselectedFg;
+  final Color? selectedBg;
+  final Color? selectedFg;
+  final Color? unselectedBg;
+  final Color? unselectedFg;
+  Color get _selectedBg => selectedBg ?? AppPalette.current.ink;
+  Color get _selectedFg => selectedFg ?? Colors.white;
+  Color get _unselectedBg => unselectedBg ?? AppPalette.current.card;
+  Color get _unselectedFg => unselectedFg ?? AppPalette.current.ink;
   final double horizontal;
   final double vertical;
 
@@ -66,7 +70,7 @@ class StickerPill extends StatelessWidget {
               vertical: vertical,
             ),
             decoration: BoxDecoration(
-              color: selected ? selectedBg : unselectedBg,
+              color: selected ? _selectedBg : _unselectedBg,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: AppPalette.current.ink, width: 1.5),
             ),
@@ -74,13 +78,17 @@ class StickerPill extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (selected && showCheck) ...[
-                  Icon(Icons.check_rounded, size: 16, color: AppPalette.current.lime),
+                  Icon(
+                    Icons.check_rounded,
+                    size: 16,
+                    color: AppPalette.current.lime,
+                  ),
                   const SizedBox(width: 6),
                 ],
                 Text(
                   label,
                   style: AppTypography.label.copyWith(
-                    color: selected ? selectedFg : unselectedFg,
+                    color: selected ? _selectedFg : _unselectedFg,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

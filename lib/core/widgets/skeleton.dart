@@ -19,7 +19,7 @@ class Skeleton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppPalette.current.surface,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -38,7 +38,7 @@ class SkeletonParagraph extends StatelessWidget {
       width: width,
       height: 20,
       decoration: BoxDecoration(
-        color: AppPalette.current.surface,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(12),
       ),
     );

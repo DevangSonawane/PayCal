@@ -100,15 +100,15 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
               currencySymbol: AppSettings.instance.currencySymbol,
               controller: amount,
             ),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
             AppTextField(label: 'What was it for?', controller: desc),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
             _CategoryPicker(
               categories: batch.categories,
               selected: category,
               onPicked: (v) => setPopState(() => category = v),
             ),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
             Text(
               'Split',
               style: AppTypography.label.copyWith(
@@ -116,7 +116,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            SizedBox(height: AppSpacing.sm),
             SplitShareEditor(
               members: batch.members,
               amountController: amount,
@@ -195,7 +195,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       appBar: AppBar(
         backgroundColor: AppPalette.current.bg,
         elevation: 0,
-        leading: const BackButton(color: AppPalette.current.text),
+        leading: BackButton(color: AppPalette.current.text),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -288,11 +288,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   Widget _row(String k, String v) => _row2(k, v);
 
   Widget _row2(String k, String v) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+    padding: EdgeInsets.only(bottom: AppSpacing.md),
     child: Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppPalette.current.surface,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(AppRadii.card),
       ),
       child: Row(
@@ -348,9 +348,9 @@ class _CategoryPicker extends StatelessWidget {
       if (picked != null) onPicked(picked);
     },
     child: Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppPalette.current.ink, width: 1.5),
       ),
@@ -365,7 +365,7 @@ class _CategoryPicker extends StatelessWidget {
               ),
             ),
           ),
-          const Icon(Icons.expand_more, color: AppPalette.current.ink),
+          Icon(Icons.expand_more, color: AppPalette.current.ink),
         ],
       ),
     ),

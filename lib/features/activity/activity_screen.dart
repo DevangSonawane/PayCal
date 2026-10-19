@@ -72,15 +72,17 @@ class _ActivityScreenState extends State<ActivityScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           Text(
             event.subtitle,
             style: AppTypography.body.copyWith(color: AppPalette.current.ink),
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             '${event.time} · ${event.batchName}',
-            style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+            style: AppTypography.caption.copyWith(
+              color: AppPalette.current.grey,
+            ),
           ),
         ],
       ),
@@ -104,157 +106,147 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: _ActivityPalette.current.page,
     body: CustomPaint(
-      painter: const _ActivityRulesPainter(),
+      painter: _ActivityRulesPainter(),
       child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
-            24,
-            40,
-            24,
-            MediaQuery.of(context).padding.bottom + 100,
+        physics: AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          40,
+          24,
+          MediaQuery.of(context).padding.bottom + 100,
+        ),
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _ActivityPalette.current.ink,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.bolt_rounded, color: Colors.white, size: 21),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Activity',
+                style: AppTypography.title.copyWith(
+                  color: _ActivityPalette.current.ink,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 24,
+                ),
+              ),
+              Spacer(),
+              IconButton(
+                onPressed: _showFilters,
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: _ActivityPalette.current.ink,
+                ),
+              ),
+            ],
           ),
-          children: [
-            Row(
+          SizedBox(height: 28),
+          Container(
+            padding: EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: _ActivityPalette.current.lime,
+              border: Border.all(color: _ActivityPalette.current.ink, width: 2),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Row(
               children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: const BoxDecoration(
-                    color: _ActivityPalette.current.ink,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.bolt_rounded,
-                    color: Colors.white,
-                    size: 21,
-                  ),
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  color: _ActivityPalette.current.ink,
+                  size: 29,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Activity',
-                  style: AppTypography.title.copyWith(
-                    color: _ActivityPalette.current.ink,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 24,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: _showFilters,
-                  icon: const Icon(
-                    Icons.tune_rounded,
-                    color: _ActivityPalette.current.ink,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Everything your groups have been up to.',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: _ActivityPalette.current.ink,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 28),
+          ),
+          const SizedBox(height: 28),
+          Row(
+            children: [
+              const WedgeBullet(size: 12),
+              const SizedBox(width: 8),
+              Text(
+                'Latest updates',
+                style: AppTypography.title.copyWith(
+                  color: _ActivityPalette.current.ink,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_events.isEmpty)
             Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 12),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: _ActivityPalette.current.lime,
-                border: Border.all(color: _ActivityPalette.current.ink, width: 2),
-                borderRadius: BorderRadius.circular(24),
+                color: AppPalette.current.card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _ActivityPalette.current.ink,
+                  width: 1.5,
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: _ActivityPalette.current.ink,
-                    size: 29,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Everything your groups have been up to.',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: _ActivityPalette.current.ink,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Nothing here for this filter yet.',
+                style: AppTypography.label.copyWith(
+                  color: _ActivityPalette.current.grey,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
-            Row(
-              children: [
-                const WedgeBullet(size: 12),
-                const SizedBox(width: 8),
-                Text(
-                  'Latest updates',
-                  style: AppTypography.title.copyWith(
-                    color: _ActivityPalette.current.ink,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_events.isEmpty)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _ActivityPalette.current.ink, width: 1.5),
-                ),
-                child: Text(
-                  'Nothing here for this filter yet.',
-                  style: AppTypography.label.copyWith(
-                    color: _ActivityPalette.current.grey,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              )
-            else ...[
-              for (final event in _events) ...[
-                if (_filterAll == 'All' &&
-                    (event == _events.first ||
-                        _events
-                                .toList()[_events.toList().indexOf(event) - 1]
-                                .batchName !=
-                            event.batchName))
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      bottom: AppSpacing.sm,
-                    ),
-                    child: Text(
-                      event.batchName.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: _ActivityPalette.current.pink,
-                        fontWeight: FontWeight.w800,
-                      ),
+            )
+          else ...[
+            for (final event in _events) ...[
+              if (_filterAll == 'All' &&
+                  (event == _events.first ||
+                      _events
+                              .toList()[_events.toList().indexOf(event) - 1]
+                              .batchName !=
+                          event.batchName))
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: AppSpacing.sm),
+                  child: Text(
+                    event.batchName.toUpperCase(),
+                    style: AppTypography.caption.copyWith(
+                      color: _ActivityPalette.current.pink,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                _ActivityCard(
-                  title: event.title,
-                  subtitle: event.subtitle,
-                  time: event.time,
-                  accent: event.title.contains('You')
-                      ? _ActivityPalette.current.purple
-                      : _ActivityPalette.current.pink,
-                  onTap: () => _showEvent(event),
                 ),
-              ],
+              _ActivityCard(
+                title: event.title,
+                subtitle: event.subtitle,
+                time: event.time,
+                accent: event.title.contains('You')
+                    ? _ActivityPalette.current.purple
+                    : _ActivityPalette.current.pink,
+                onTap: () => _showEvent(event),
+              ),
             ],
           ],
-        ),
+        ],
       ),
-    );
+    ),
+  );
 }
 
 class _ActivityPalette {
   static AppPalette get current => AppPalette.current;
-  static const page = Color(0xFFFFFEFC);
-  static const lime = Color(0xFFD8FF00);
-  static const ink = Color(0xFF0A0A0A);
-  static const purple = Color(0xFF9B70F2);
-  static const pink = Color(0xFFF0477F);
-  static const grey = Color(0xFF8A8A8A);
 }
 
 class _ActivityRulesPainter extends CustomPainter {
@@ -294,7 +286,7 @@ class _ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Material(
-      color: Colors.white,
+      color: AppPalette.current.card,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
@@ -313,7 +305,10 @@ class _ActivityCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: accent,
                   shape: BoxShape.circle,
-                  border: Border.all(color: _ActivityPalette.current.ink, width: 1.5),
+                  border: Border.all(
+                    color: _ActivityPalette.current.ink,
+                    width: 1.5,
+                  ),
                 ),
                 child: const Icon(
                   Icons.receipt_long_outlined,
@@ -350,6 +345,8 @@ class _ActivityCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
       ),
     ),
   );

@@ -177,7 +177,11 @@ class _QuickAddFormState extends State<_QuickAddForm> {
             ),
             child: Row(
               children: [
-                Icon(Icons.south_west_rounded, color: AppPalette.current.ink, size: 20),
+                Icon(
+                  Icons.south_west_rounded,
+                  color: AppPalette.current.ink,
+                  size: 20,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -207,7 +211,11 @@ class _QuickAddFormState extends State<_QuickAddForm> {
             ),
             child: Row(
               children: [
-                Icon(Icons.call_split_outlined, color: AppPalette.current.ink, size: 20),
+                Icon(
+                  Icons.call_split_outlined,
+                  color: AppPalette.current.ink,
+                  size: 20,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -361,7 +369,9 @@ class _PreviewState extends State<_Preview> {
                         : '${Money.format(per, 'INR')} each · split ${widget.ways} ways')
                   : 'Enter an amount to preview shares',
               style: AppTypography.label.copyWith(
-                color: active ? AppPalette.current.ink : AppPalette.current.grey,
+                color: active
+                    ? AppPalette.current.ink
+                    : AppPalette.current.grey,
                 fontWeight: FontWeight.w800,
               ),
             ),

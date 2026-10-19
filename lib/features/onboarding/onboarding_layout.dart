@@ -22,7 +22,7 @@ class OnboardingLayout extends StatelessWidget {
     required this.onContinue,
     this.onBack,
     this.onSkip,
-    this.accent = AppPalette.current.pink,
+    this.accent,
     this.badgeIcon = Icons.auto_awesome_rounded,
     this.sticker,
     this.totalSteps = 5,
@@ -36,26 +36,27 @@ class OnboardingLayout extends StatelessWidget {
   final VoidCallback onContinue;
   final VoidCallback? onBack;
   final VoidCallback? onSkip;
-  final Color accent;
+  final Color? accent;
   final IconData badgeIcon;
   final String? sticker;
   final int totalSteps;
 
-  bool get _onAccentIsDark => accent != AppPalette.current.lime;
+  Color get _accent => accent ?? AppPalette.current.pink;
+  bool get _onAccentIsDark => _accent != AppPalette.current.lime;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: Stack(
             children: [
               Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       AppSpacing.xl,
                       AppSpacing.md,
                       AppSpacing.xl,
@@ -73,14 +74,14 @@ class OnboardingLayout extends StatelessWidget {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppPalette.current.card,
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: AppPalette.current.ink,
                                     width: 1.5,
                                   ),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.chevron_left,
                                   size: 26,
                                   color: AppPalette.current.ink,
@@ -95,7 +96,7 @@ class OnboardingLayout extends StatelessWidget {
                           child: OnboardingProgress(
                             currentStep: step,
                             totalSteps: totalSteps,
-                            accent: accent,
+                            accent: _accent,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -105,7 +106,7 @@ class OnboardingLayout extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: accent,
+                            color: _accent,
                             borderRadius: BorderRadius.circular(999),
                             border: Border.all(
                               color: AppPalette.current.ink,
@@ -144,7 +145,7 @@ class OnboardingLayout extends StatelessWidget {
                                         width: 34,
                                         height: 34,
                                         decoration: BoxDecoration(
-                                          color: accent,
+                                          color: _accent,
                                           shape: BoxShape.circle,
                                           border: Border.all(
                                             color: AppPalette.current.ink,
@@ -189,7 +190,7 @@ class OnboardingLayout extends StatelessWidget {
                                           vertical: 7,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: accent,
+                                          color: _accent,
                                           borderRadius: BorderRadius.circular(
                                             999,
                                           ),
@@ -239,7 +240,9 @@ class OnboardingLayout extends StatelessWidget {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: AppPalette.current.ink.withValues(alpha: 0.18),
+                            color: AppPalette.current.ink.withValues(
+                              alpha: 0.18,
+                            ),
                             blurRadius: 18,
                             offset: const Offset(0, 8),
                           ),

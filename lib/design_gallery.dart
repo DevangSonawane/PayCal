@@ -34,7 +34,9 @@ class DesignGallery extends StatelessWidget {
             ),
             Text(
               'Title',
-              style: AppTypography.title.copyWith(color: AppPalette.current.text),
+              style: AppTypography.title.copyWith(
+                color: AppPalette.current.text,
+              ),
             ),
             Text(
               'Body large',

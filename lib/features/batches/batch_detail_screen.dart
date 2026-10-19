@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/settings/app_settings.dart';
 import 'package:paycal/core/theme/app_typography.dart';
@@ -22,15 +23,6 @@ import 'package:paycal/features/settlements/settle_up_sheet.dart';
 
 class _DPalette {
   static AppPalette get current => AppPalette.current;
-  static const page = Color(0xFFFFFEFC),
-      lime = Color(0xFFD8FF00),
-      ink = Color(0xFF0A0A0A),
-      indigo = Color(0xFF2014B8),
-      purple = Color(0xFF9B70F2),
-      pink = Color(0xFFF0477F),
-      grey = Color(0xFF8A8A8A),
-      chip = Color(0xFFF1F1F4),
-      hairline = Color(0xFFE6E6EA);
 }
 
 /// A batch reads as a shared payment conversation: payments from the current
@@ -78,7 +70,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     return Scaffold(
       backgroundColor: _DPalette.current.page,
       body: CustomPaint(
-        painter: const _StripePainter(),
+        painter: _StripePainter(),
         child: SizedBox.expand(
           child: SafeArea(
             bottom: false,
@@ -104,7 +96,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                     ),
                     children: [
                       _HeroCard(batch: widget.batch, net: net),
-                      const SizedBox(height: 22),
+                      SizedBox(height: 22),
                       Row(
                         children: [
                           Text(
@@ -114,7 +106,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                               color: _DPalette.current.ink,
                             ),
                           ),
-                          const Spacer(),
+                          Spacer(),
                           Text(
                             '${expenses.length} total',
                             style: AppTypography.caption.copyWith(
@@ -123,9 +115,9 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       if (expenses.isEmpty)
-                        const _EmptyPayments()
+                        _EmptyPayments()
                       else
                         for (var i = 0; i < expenses.length; i++) ...[
                           if (i == 0 ||
@@ -140,7 +132,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                             onExpenseChanged: () => setState(() {}),
                           ),
                           if (i != expenses.length - 1)
-                            const Padding(
+                            Padding(
                               padding: EdgeInsets.symmetric(vertical: 10),
                               child: Divider(
                                 height: 1,
@@ -158,12 +150,12 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddActions,
-        backgroundColor: _DPalette.current.indigo,
+        backgroundColor: AppColors.indigo,
         foregroundColor: Colors.white,
         elevation: 0,
         highlightElevation: 0,
-        shape: const StadiumBorder(),
-        icon: const Icon(Icons.add),
+        shape: StadiumBorder(),
+        icon: Icon(Icons.add),
         label: Text(
           'Add',
           style: AppTypography.label.copyWith(
@@ -197,14 +189,14 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             '${batch.members.length} members',
             style: AppTypography.body.copyWith(color: _DPalette.current.grey),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.lg),
           ...batch.members.map(
             (member) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: EdgeInsets.only(bottom: AppSpacing.md),
               child: Row(
                 children: [
                   Avatar(initials: member.initials, size: 38),
-                  const SizedBox(width: AppSpacing.md),
+                  SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       member.id == MockData.meId ? 'You' : member.name,
@@ -216,7 +208,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   ),
                   if (member.isAdmin)
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 4,
                       ),
@@ -238,7 +230,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             ),
           ),
           if (recurring.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             Text(
               'Recurring transfers',
               style: AppTypography.label.copyWith(
@@ -246,25 +238,28 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            SizedBox(height: AppSpacing.sm),
             for (final r in recurring)
               Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                padding: EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppPalette.current.card,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: _DPalette.current.ink, width: 1.5),
+                    border: Border.all(
+                      color: _DPalette.current.ink,
+                      width: 1.5,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.repeat_rounded,
                         color: _DPalette.current.ink,
                         size: 20,
                       ),
-                      const SizedBox(width: AppSpacing.md),
+                      SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,14 +293,14 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppPalette.current.card,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: _DPalette.current.ink,
                               width: 1.5,
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.delete_outline_rounded,
                             size: 18,
                             color: _DPalette.current.ink,
@@ -337,7 +332,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               _showAddMoneySheet();
             },
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           _ActionOption(
             icon: Icons.receipt_long_outlined,
             title: 'Add expense',
@@ -347,7 +342,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               _showExpenseSheet(splitEqually: false);
             },
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           _ActionOption(
             icon: Icons.call_split_outlined,
             title: 'Split bill',
@@ -357,7 +352,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               _showExpenseSheet(splitEqually: true);
             },
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           _ActionOption(
             icon: Icons.autorenew_rounded,
             title: 'Set up recurring transfer',
@@ -404,7 +399,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               controller: amount,
               autofocus: false,
             ),
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             _sheetLabel('Paid to'),
             _SelectField<String>(
               value: recipientId,
@@ -461,13 +456,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               controller: amount,
               autofocus: false,
             ),
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             AppTextField(
               label: 'What was it for?',
               hint: 'Dinner, taxi, groceries…',
               controller: description,
             ),
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             _sheetLabel('Category'),
             _SelectField<String>(
               value: category,
@@ -475,13 +470,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               dialogTitle: 'Category',
               onChanged: (value) => setSheetState(() => category = value),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             _sheetLabel('Split'),
             SplitShareEditor(
               members: widget.batch.members,
               amountController: amount,
               currency: widget.batch.currency,
-              initialShares: const {},
+              initialShares: {},
               onChanged: (s, ok) {
                 shares = s;
                 splitComplete = ok;
@@ -550,13 +545,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               controller: amount,
               autofocus: false,
             ),
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             AppTextField(
               label: 'What is this for?',
               hint: 'Pocket money, repayment…',
               controller: description,
             ),
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             _sheetLabel('Send to'),
             _SelectField<String>(
               value: recipientId,
@@ -567,21 +562,21 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               dialogTitle: 'Send to',
               onChanged: (value) => setSheetState(() => recipientId = value),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: AppSpacing.lg),
             _PickerTile(
               label: 'First payment date',
               value: '${dueDate.day}/${dueDate.month}/${dueDate.year}',
               onTap: () async {
                 final selected = await showDatePicker(
                   context: context,
-                  firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                  firstDate: DateTime.now().subtract(Duration(days: 1)),
                   initialDate: dueDate,
-                  lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  lastDate: DateTime.now().add(Duration(days: 3650)),
                 );
                 if (selected != null) setSheetState(() => dueDate = selected);
               },
             ),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
             _PickerTile(
               label: 'Repeats',
               value: frequency == RecurringFrequency.monthly
@@ -594,10 +589,12 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               }),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.md),
+              padding: EdgeInsets.only(top: AppSpacing.md),
               child: Text(
                 'A paid activity will be posted to this group on each due date.',
-                style: AppTypography.body.copyWith(color: _DPalette.current.grey),
+                style: AppTypography.body.copyWith(
+                  color: _DPalette.current.grey,
+                ),
               ),
             ),
           ],
@@ -679,7 +676,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   }
 
   Widget _sheetLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    padding: EdgeInsets.only(bottom: AppSpacing.sm),
     child: Text(
       text,
       style: AppTypography.caption.copyWith(
@@ -715,11 +712,11 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
 }
 
 class _StripePainter extends CustomPainter {
-  const _StripePainter();
+  _StripePainter();
   @override
   void paint(Canvas c, Size s) {
     final p = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [Color(0x080A0A0A), Color(0x080A0A0A), Color(0x000A0A0A)],
@@ -743,12 +740,12 @@ class _RoundIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => InkWell(
     onTap: onTap,
-    customBorder: const CircleBorder(),
+    customBorder: CircleBorder(),
     child: Container(
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppPalette.current.card,
         shape: BoxShape.circle,
         border: Border.all(color: _DPalette.current.ink, width: 1.5),
       ),
@@ -771,11 +768,11 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+    padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
     child: Row(
       children: [
         _RoundIconButton(icon: Icons.arrow_back_rounded, onTap: onBack),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -792,16 +789,18 @@ class _Header extends StatelessWidget {
               ),
               Text(
                 '${batch.members.length} people',
-                style: AppTypography.caption.copyWith(color: _DPalette.current.grey),
+                style: AppTypography.caption.copyWith(
+                  color: _DPalette.current.grey,
+                ),
               ),
             ],
           ),
         ),
         PopupMenuButton<_BatchMenuAction>(
-          offset: const Offset(0, 48),
+          offset: Offset(0, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: _DPalette.current.ink, width: 1.5),
+            side: BorderSide(color: _DPalette.current.ink, width: 1.5),
           ),
           color: Colors.white,
           onSelected: (action) {
@@ -811,7 +810,7 @@ class _Header extends StatelessWidget {
               onSettleUp();
             }
           },
-          itemBuilder: (context) => const [
+          itemBuilder: (context) => [
             PopupMenuItem(
               value: _BatchMenuAction.groupDetails,
               child: Text('View group details'),
@@ -825,11 +824,15 @@ class _Header extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppPalette.current.card,
               shape: BoxShape.circle,
               border: Border.all(color: _DPalette.current.ink, width: 1.5),
             ),
-            child: const Icon(Icons.more_horiz, size: 20, color: _DPalette.current.ink),
+            child: Icon(
+              Icons.more_horiz,
+              size: 20,
+              color: _DPalette.current.ink,
+            ),
           ),
         ),
       ],
@@ -859,7 +862,7 @@ class _HeroCard extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            const Positioned.fill(child: CustomPaint(painter: _HeroPainter())),
+            Positioned.fill(child: CustomPaint(painter: _HeroPainter())),
             Positioned(
               left: 24,
               top: 20,
@@ -867,9 +870,12 @@ class _HeroCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Your balance in',
-                    style: TextStyle(color: _DPalette.current.grey, fontSize: 13),
+                    style: TextStyle(
+                      color: _DPalette.current.grey,
+                      fontSize: 13,
+                    ),
                   ),
                   FittedBox(
                     fit: BoxFit.scaleDown,
@@ -891,8 +897,8 @@ class _HeroCard extends StatelessWidget {
               bottom: 18,
               child: Row(
                 children: [
-                  const _OverlapCircles(),
-                  const SizedBox(width: 10),
+                  _OverlapCircles(),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -900,7 +906,7 @@ class _HeroCard extends StatelessWidget {
                       children: [
                         Text(
                           caption,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _DPalette.current.ink,
                             fontSize: 12,
                           ),
@@ -933,10 +939,10 @@ class _HeroCard extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppPalette.current.card,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.groups_2_outlined,
                   color: _DPalette.current.ink,
                 ),
@@ -950,13 +956,10 @@ class _HeroCard extends StatelessWidget {
 }
 
 class _HeroPainter extends CustomPainter {
-  const _HeroPainter();
+  _HeroPainter();
   @override
   void paint(Canvas c, Size s) {
-    final rr = RRect.fromRectAndRadius(
-      Offset.zero & s,
-      const Radius.circular(28),
-    );
+    final rr = RRect.fromRectAndRadius(Offset.zero & s, Radius.circular(28));
     c.save();
     c.clipRRect(rr);
     c.drawPaint(Paint()..color = Colors.white);
@@ -1014,7 +1017,7 @@ class _OverlapCircles extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppPalette.current.card,
               shape: BoxShape.circle,
               border: Border.all(color: _DPalette.current.ink, width: 1.5),
             ),
@@ -1026,7 +1029,7 @@ class _OverlapCircles extends StatelessWidget {
           child: Container(
             width: 34,
             height: 34,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: _DPalette.current.pink,
               shape: BoxShape.circle,
             ),
@@ -1042,15 +1045,15 @@ class _EmptyPayments extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.symmetric(vertical: 36),
+    padding: EdgeInsets.symmetric(vertical: 36),
     decoration: BoxDecoration(
       color: _DPalette.current.chip,
       borderRadius: BorderRadius.circular(24),
     ),
     child: Column(
       children: [
-        const Icon(Icons.receipt_long_outlined, color: _DPalette.current.grey),
-        const SizedBox(height: 8),
+        Icon(Icons.receipt_long_outlined, color: _DPalette.current.grey),
+        SizedBox(height: 8),
         Text(
           'No payments in this batch yet.',
           style: AppTypography.caption.copyWith(color: _DPalette.current.grey),
@@ -1078,13 +1081,13 @@ class _SelectField<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: AppPalette.current.card,
     borderRadius: BorderRadius.circular(18),
     child: InkWell(
       onTap: () => _pick(context),
       borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(
+        padding: EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.lg,
         ),
@@ -1103,8 +1106,8 @@ class _SelectField<T> extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            const Icon(
+            SizedBox(width: AppSpacing.sm),
+            Icon(
               Icons.expand_more_rounded,
               color: _DPalette.current.ink,
               size: 22,
@@ -1124,7 +1127,7 @@ class _SelectField<T> extends StatelessWidget {
         children: [
           for (final entry in options.entries)
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: EdgeInsets.only(bottom: AppSpacing.sm),
               child: OptionTile(
                 title: entry.value,
                 selected: entry.key == value,
@@ -1153,7 +1156,7 @@ class _ActionOption extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: AppPalette.current.card,
     borderRadius: BorderRadius.circular(18),
     child: InkWell(
       onTap: onTap,
@@ -1199,7 +1202,7 @@ class _ActionOption extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: _DPalette.current.ink),
+            Icon(Icons.chevron_right, color: _DPalette.current.ink),
           ],
         ),
       ),
@@ -1220,7 +1223,7 @@ class _PickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: AppPalette.current.card,
     borderRadius: BorderRadius.circular(18),
     child: InkWell(
       onTap: onTap,

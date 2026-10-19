@@ -22,7 +22,9 @@ class QuirkyCheck extends StatelessWidget {
         children: [
           Positioned.fill(
             child: CustomPaint(
-              painter: _RingPainter(selected ? AppPalette.current.ink : AppPalette.current.grey),
+              painter: _RingPainter(
+                selected ? AppPalette.current.ink : AppPalette.current.grey,
+              ),
             ),
           ),
           Positioned.fill(

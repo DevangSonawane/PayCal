@@ -21,7 +21,7 @@ class SegmentedControl extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppPalette.current.ink, width: 1.5),
       ),

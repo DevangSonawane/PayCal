@@ -7,12 +7,12 @@ class OnboardingProgress extends StatelessWidget {
     super.key,
     required this.currentStep,
     this.totalSteps = 4,
-    this.accent = AppPalette.current.pink,
+    this.accent,
   });
 
   final int currentStep;
   final int totalSteps;
-  final Color accent;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class OnboardingProgress extends StatelessWidget {
         final color = index < currentStep
             ? AppPalette.current.ink
             : index == currentStep
-            ? accent
+            ? (accent ?? AppPalette.current.pink)
             : AppPalette.current.chip;
         return Expanded(
           child: AnimatedContainer(

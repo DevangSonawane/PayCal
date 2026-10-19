@@ -17,24 +17,24 @@ class WelcomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.md),
+                SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
                     Container(
                       width: 34,
                       height: 34,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppPalette.current.ink,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.bolt_rounded,
                         color: AppPalette.current.lime,
                         size: 20,
@@ -50,7 +50,7 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                SizedBox(height: AppSpacing.xl),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -86,13 +86,15 @@ class WelcomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const OnboardingFlow()),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.sm),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Already have an account?',
-                      style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                      style: AppTypography.body.copyWith(
+                        color: AppPalette.current.grey,
+                      ),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(context).push(
@@ -110,10 +112,12 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 Text(
                   'By continuing you agree to our Terms and Privacy Policy',
-                  style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+                  style: AppTypography.caption.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
               ],
             ),
           ),
@@ -136,9 +140,7 @@ class _WelcomeHero extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          const Positioned.fill(
-            child: CustomPaint(painter: _WelcomeHeroPainter()),
-          ),
+          Positioned.fill(child: CustomPaint(painter: _WelcomeHeroPainter())),
           Positioned(
             left: 18,
             top: 18,
@@ -170,8 +172,8 @@ class _WelcomeHero extends StatelessWidget {
             child: Container(
               width: 58,
               height: 58,
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppPalette.current.card,
                 shape: BoxShape.circle,
                 border: Border.fromBorderSide(
                   BorderSide(color: AppPalette.current.ink, width: 2),
@@ -185,7 +187,7 @@ class _WelcomeHero extends StatelessWidget {
             child: Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppPalette.current.page,
                 shape: BoxShape.circle,
                 border: Border.fromBorderSide(

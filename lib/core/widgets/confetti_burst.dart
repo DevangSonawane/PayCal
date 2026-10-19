@@ -48,11 +48,11 @@ class _ConfettiBurstState extends State<_ConfettiBurst>
   late final List<_Shard> _shards;
 
   static const _palette = [
-    AppPalette.current.lime,
-    AppPalette.current.pink,
-    AppPalette.current.purple,
+    AppColors.lime,
+    AppColors.pink,
+    AppColors.purple,
     AppColors.indigo,
-    AppPalette.current.ink,
+    AppColors.ink,
   ];
 
   @override

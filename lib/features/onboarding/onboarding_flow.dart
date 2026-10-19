@@ -101,11 +101,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   int index = 0; // 0 gender, 1 birthday, 2 role, 3 splits, 4 household
 
   static const _accents = [
-    AppPalette.current.pink,
-    AppPalette.current.purple,
+    AppColors.pink,
+    AppColors.purple,
     AppColors.indigo,
-    AppPalette.current.lime,
-    AppPalette.current.pink,
+    AppColors.lime,
+    AppColors.pink,
   ];
   static const _icons = [
     Icons.face_rounded,
@@ -162,7 +162,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   @override
   Widget build(BuildContext context) {
     if (!loaded) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppPalette.current.page,
         body: Center(child: WedgeLoader(size: 34)),
       );
@@ -257,9 +257,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 AppSpacing.md,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppPalette.current.card,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                border: Border.all(color: AppColors.ink, width: 1.5),
               ),
               child: Row(
                 children: [
@@ -269,7 +269,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                           ? 'Tap to pick your date'
                           : '${b.day}/${b.month}/${b.year}',
                       style: AppTypography.titleSmall.copyWith(
-                        color: b == null ? AppPalette.current.grey : AppPalette.current.ink,
+                        color: b == null
+                            ? AppPalette.current.grey
+                            : AppColors.ink,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -278,9 +280,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppPalette.current.purple,
+                      color: AppColors.purple,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      border: Border.all(color: AppColors.ink, width: 1.5),
                     ),
                     child: const Icon(
                       Icons.cake_outlined,
@@ -307,7 +309,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 child: Text(
                   'You need to be at least ${AppConfig.minimumAge} to use ${AppConfig.appName}.',
                   style: AppTypography.body.copyWith(
-                    color: AppPalette.current.pink,
+                    color: AppColors.pink,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -418,9 +420,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     if (count < 1) count = 1;
     if (count > 10) count = 10;
     const accents = [
-      AppPalette.current.lime,
-      AppPalette.current.pink,
-      AppPalette.current.purple,
+      AppColors.lime,
+      AppColors.pink,
+      AppColors.purple,
       AppColors.indigo,
     ];
     return _shell(
@@ -459,7 +461,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                         '$count',
                         key: ValueKey(count),
                         style: AppTypography.displayAmount.copyWith(
-                          color: AppPalette.current.ink,
+                          color: AppColors.ink,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -475,7 +477,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               ),
               _roundBtn(
                 icon: Icons.add_rounded,
-                bg: AppPalette.current.lime,
+                bg: AppColors.lime,
                 enabled: count < 10,
                 onTap: () => _setCount(count + 1),
               ),
@@ -513,7 +515,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                                 color: accents[i % accents.length],
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppPalette.current.ink,
+                                  color: AppColors.ink,
                                   width: 2,
                                 ),
                               ),
@@ -522,8 +524,8 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                                 size: 20,
                                 color:
                                     accents[i % accents.length] ==
-                                        AppPalette.current.lime
-                                    ? AppPalette.current.ink
+                                        AppColors.lime
+                                    ? AppColors.ink
                                     : Colors.white,
                               ),
                             ),
@@ -584,14 +586,14 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             color: enabled ? bg : AppPalette.current.chip,
             shape: BoxShape.circle,
             border: Border.all(
-              color: enabled ? AppPalette.current.ink : AppPalette.current.hairline,
+              color: enabled ? AppColors.ink : AppPalette.current.hairline,
               width: 1.5,
             ),
           ),
           child: Icon(
             icon,
             size: 26,
-            color: enabled ? AppPalette.current.ink : AppPalette.current.grey,
+            color: enabled ? AppColors.ink : AppPalette.current.grey,
           ),
         ),
       ),

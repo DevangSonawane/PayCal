@@ -121,7 +121,7 @@ class AvatarStack extends StatelessWidget {
                 width: size - 4,
                 height: size - 4,
                 decoration: BoxDecoration(
-                  color: AppPalette.current.surface,
+                  color: AppPalette.current.card,
                   borderRadius: BorderRadius.circular(AppRadii.avatar),
                   border: Border.all(color: AppPalette.current.bg, width: 2),
                 ),

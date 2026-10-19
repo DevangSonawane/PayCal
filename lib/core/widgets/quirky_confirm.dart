@@ -79,7 +79,10 @@ class _QuirkyConfirmState extends State<_QuirkyConfirm>
                     decoration: BoxDecoration(
                       color: AppPalette.current.lime,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppPalette.current.ink, width: 2),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 2,
+                      ),
                       boxShadow: const [
                         BoxShadow(
                           color: AppColors.floatingShadow,

@@ -35,7 +35,7 @@ Future<void> showBatchEdit(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(label: 'Batch name', controller: name),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             'CURRENCY',
             style: AppTypography.caption.copyWith(
@@ -44,7 +44,7 @@ Future<void> showBatchEdit(
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
@@ -58,7 +58,7 @@ Future<void> showBatchEdit(
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             'MEMBERS (${members.length})',
             style: AppTypography.caption.copyWith(
@@ -67,14 +67,14 @@ Future<void> showBatchEdit(
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           for (final m in members)
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: EdgeInsets.only(bottom: AppSpacing.sm),
               child: Row(
                 children: [
                   Avatar(initials: m.initials, size: 32),
-                  const SizedBox(width: AppSpacing.sm),
+                  SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       m.id == MockData.meId ? 'You (admin)' : m.name,
@@ -91,11 +91,14 @@ Future<void> showBatchEdit(
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppPalette.current.card,
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                          border: Border.all(
+                            color: AppPalette.current.ink,
+                            width: 1.5,
+                          ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.close_rounded,
                           size: 15,
                           color: AppPalette.current.ink,

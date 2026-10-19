@@ -12,7 +12,7 @@ import 'package:paycal/data/models.dart';
 /// Who owes whom, resolved greedily into the fewest person-to-person
 /// transfers, so the batch can be marked fully square.
 class SettlementTransfer {
-  const SettlementTransfer({
+  SettlementTransfer({
     required this.fromId,
     required this.toId,
     required this.amountMinor,
@@ -71,7 +71,7 @@ Future<void> showSettleUp(
     title: 'Settle up',
     builder: (_) => transfers.isEmpty
         ? Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
             child: Column(
               children: [
                 Container(
@@ -82,7 +82,7 @@ Future<void> showSettleUp(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppPalette.current.ink, width: 2),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.verified_rounded,
                     color: AppPalette.current.ink,
                     size: 30,
@@ -98,7 +98,9 @@ Future<void> showSettleUp(
                 ),
                 Text(
                   'Nothing to settle in ${batch.name}.',
-                  style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+                  style: AppTypography.caption.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
                 ),
               ],
             ),
@@ -109,7 +111,9 @@ Future<void> showSettleUp(
             children: [
               Text(
                 'The fewest moves to make ${batch.name} square:',
-                style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+                style: AppTypography.caption.copyWith(
+                  color: AppPalette.current.grey,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               for (final t in transfers)
@@ -118,9 +122,12 @@ Future<void> showSettleUp(
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppPalette.current.card,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 1.5,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -166,7 +173,9 @@ Future<void> showSettleUp(
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Recording each transfer as a square-up expense.',
-                style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+                style: AppTypography.caption.copyWith(
+                  color: AppPalette.current.grey,
+                ),
               ),
             ],
           ),

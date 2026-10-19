@@ -97,7 +97,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
     widget.draft.clear();
     showConfettiBurst(context);
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const InviteScreen()));
+        .push(MaterialPageRoute(builder: (_) => InviteScreen()));
   }
 
   @override
@@ -105,10 +105,10 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.md,
               AppSpacing.xl,
@@ -125,35 +125,38 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppPalette.current.card,
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                          border: Border.all(
+                            color: AppPalette.current.ink,
+                            width: 1.5,
+                          ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.chevron_left,
                           size: 26,
                           color: AppPalette.current.ink,
                         ),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.md),
                     Container(
                       width: 34,
                       height: 34,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppPalette.current.lime,
                         shape: BoxShape.circle,
                         border: Border.fromBorderSide(
                           BorderSide(color: AppPalette.current.ink, width: 2),
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.receipt_long_outlined,
                         size: 19,
                         color: AppPalette.current.ink,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         'Your first batch',
@@ -165,21 +168,23 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.sm),
                 Text(
                   'Batches keep shared money in one tidy place. Name it, pick categories, done.',
-                  style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                  style: AppTypography.body.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 SegmentedControl(
-                  tabs: const ['Create a batch', 'Join with a link'],
+                  tabs: ['Create a batch', 'Join with a link'],
                   selected: _tab,
                   onSelect: (i) => setState(() => _tab = i),
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                SizedBox(height: AppSpacing.xl),
                 Expanded(
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 420),
+                    duration: Duration(milliseconds: 420),
                     switchInCurve: Curves.easeOutBack,
                     switchOutCurve: Curves.easeInCubic,
                     transitionBuilder: (child, anim) => FadeTransition(
@@ -202,7 +207,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                   label: _tab == 0 ? 'Create batch' : 'Request to join',
                   onPressed: _continue,
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.sm),
               ],
             ),
           ),
@@ -216,7 +221,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppTextField(label: 'Batch name', controller: _name),
-        const SizedBox(height: AppSpacing.lg),
+        SizedBox(height: AppSpacing.lg),
         Text(
           'Currency',
           style: AppTypography.label.copyWith(
@@ -224,7 +229,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.sm,
           children: currencies
@@ -265,9 +270,12 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                       vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppPalette.current.card,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 1.5,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -280,7 +288,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                           ),
                         ),
                         const SizedBox(width: 5),
-                        const Icon(
+                        Icon(
                           Icons.close_rounded,
                           size: 15,
                           color: AppPalette.current.pink,

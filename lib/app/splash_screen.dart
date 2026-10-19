@@ -38,11 +38,11 @@ class _SplashScreenState extends State<SplashScreen> {
               Container(
                 width: 52,
                 height: 52,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppPalette.current.ink,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.bolt_rounded,
                   color: AppPalette.current.lime,
                   size: 28,
@@ -59,7 +59,10 @@ class _SplashScreenState extends State<SplashScreen> {
                   decoration: BoxDecoration(
                     color: AppPalette.current.lime,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                    border: Border.all(
+                      color: AppPalette.current.ink,
+                      width: 1.5,
+                    ),
                   ),
                   child: Text(
                     AppConfig.appName,

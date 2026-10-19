@@ -32,10 +32,10 @@ Future<void> showSettleSheet(
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
+            padding: EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.md,
             ),
@@ -46,7 +46,7 @@ Future<void> showSettleSheet(
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.payments_rounded,
                   color: AppPalette.current.ink,
                   size: 22,

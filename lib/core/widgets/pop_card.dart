@@ -16,7 +16,7 @@ Future<T?> showPopCard<T>({
     barrierDismissible: true,
     barrierLabel: title,
     barrierColor: AppPalette.current.scrim,
-    transitionDuration: const Duration(milliseconds: 280),
+    transitionDuration: Duration(milliseconds: 280),
     pageBuilder: (dialogContext, animation, secondaryAnimation) =>
         PopCard(title: title, footer: footer, child: builder(dialogContext)),
     transitionBuilder: popTransitionBuilder,
@@ -33,7 +33,7 @@ Widget popTransitionBuilder(
   return FadeTransition(
     opacity: CurvedAnimation(
       parent: animation,
-      curve: const Interval(0, .6, curve: Curves.easeOut),
+      curve: Interval(0, .6, curve: Curves.easeOut),
     ),
     child: ScaleTransition(
       scale: Tween<double>(begin: .78, end: 1).animate(curved),
@@ -63,7 +63,7 @@ class PopCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 28),
+          margin: EdgeInsets.symmetric(horizontal: 28),
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * .82,
           ),
@@ -72,7 +72,7 @@ class PopCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: AppPalette.current.ink, width: 2),
           ),
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: EdgeInsets.all(AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -81,17 +81,17 @@ class PopCard extends StatelessWidget {
                   Container(
                     width: 34,
                     height: 34,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppPalette.current.ink,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.add_rounded,
                       color: Colors.white,
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
+                  SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       title,
@@ -108,11 +108,14 @@ class PopCard extends StatelessWidget {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppPalette.current.card,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                        border: Border.all(
+                          color: AppPalette.current.ink,
+                          width: 1.5,
+                        ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close_rounded,
                         color: AppPalette.current.ink,
                         size: 17,

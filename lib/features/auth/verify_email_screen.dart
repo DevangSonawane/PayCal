@@ -37,7 +37,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   void _resend() {
     if (_cooldown > 0) return;
     setState(() => _cooldown = 30);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    _timer = Timer.periodic(Duration(seconds: 1), (t) {
       if (_cooldown <= 1) {
         t.cancel();
         setState(() => _cooldown = 0);
@@ -50,7 +50,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   Future<void> _continue() async {
     if (!widget.google) {
       // Simulate polling success.
-      await Future.delayed(const Duration(milliseconds: 400));
+      await Future.delayed(Duration(milliseconds: 400));
     }
     if (!mounted) return;
     Navigator.of(context).push(
@@ -67,10 +67,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.md,
               AppSpacing.xl,
@@ -85,25 +85,28 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppPalette.current.card,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 1.5,
+                      ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chevron_left,
                       size: 26,
                       color: AppPalette.current.ink,
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       width: 34,
                       height: 34,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppPalette.current.purple,
                         shape: BoxShape.circle,
                         border: Border.fromBorderSide(
@@ -131,7 +134,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'We sent a verification link to ${widget.email}. Tap it and you are in.',
-                  style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                  style: AppTypography.body.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
                 ),
                 const Spacer(),
                 PrimaryButton(

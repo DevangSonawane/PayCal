@@ -44,7 +44,7 @@ class AppTextField extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -54,38 +54,47 @@ class AppTextField extends StatelessWidget {
           autofillHints: autofillHints,
           textInputAction: textInputAction,
           onFieldSubmitted: onFieldSubmitted,
-          style: AppTypography.bodyLarge.copyWith(color: AppPalette.current.ink),
+          style: AppTypography.bodyLarge.copyWith(
+            color: AppPalette.current.ink,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: AppTypography.body.copyWith(color: AppPalette.current.grey),
+            hintStyle: AppTypography.body.copyWith(
+              color: AppPalette.current.grey,
+            ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppPalette.current.card,
             suffixIcon: suffix,
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding: EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.lg,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: AppPalette.current.ink, width: 1.5),
+              borderSide: BorderSide(color: AppPalette.current.ink, width: 1.5),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: AppPalette.current.ink, width: 1.5),
+              borderSide: BorderSide(color: AppPalette.current.ink, width: 1.5),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: AppPalette.current.ink, width: 2),
+              borderSide: BorderSide(color: AppPalette.current.ink, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: AppPalette.current.pink, width: 1.5),
+              borderSide: BorderSide(
+                color: AppPalette.current.pink,
+                width: 1.5,
+              ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: AppPalette.current.pink, width: 2),
+              borderSide: BorderSide(color: AppPalette.current.pink, width: 2),
             ),
-            errorStyle: AppTypography.caption.copyWith(color: AppPalette.current.pink),
+            errorStyle: AppTypography.caption.copyWith(
+              color: AppPalette.current.pink,
+            ),
           ),
         ),
       ],

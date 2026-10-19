@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 import 'app_typography.dart';
+
 class AppTheme {
   static ThemeData light() {
     const textTheme = TextTheme(
@@ -20,7 +21,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppPalette.current.bg,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         surface: AppPalette.current.bg,
         primary: AppPalette.current.text,
         onPrimary: AppColors.onPrimary,
@@ -28,7 +29,7 @@ class AppTheme {
         error: AppPalette.current.oweText,
       ),
       textTheme: textTheme,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppPalette.current.bg,
         elevation: 0,
         scrolledUnderElevation: 0,

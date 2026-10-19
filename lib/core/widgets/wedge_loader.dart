@@ -38,7 +38,7 @@ class _WedgeLoaderState extends State<WedgeLoader>
         angle: _controller.value * 6.28318,
         child: CustomPaint(
           size: Size.square(widget.size),
-          painter: const _WedgePainter(),
+          painter: _WedgePainter(),
         ),
       ),
     );
@@ -46,13 +46,13 @@ class _WedgeLoaderState extends State<WedgeLoader>
 }
 
 class _WedgePainter extends CustomPainter {
-  const _WedgePainter();
+  _WedgePainter();
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final radius = size.shortestSide / 2;
-    const gap = 1.1;
+    final gap = 1.1;
     final path = Path()
       ..moveTo(center.dx, center.dy)
       ..arcTo(
@@ -83,16 +83,16 @@ class _WedgePainter extends CustomPainter {
 
 /// Small ink wedge used as a bullet in front of section headings.
 class WedgeBullet extends StatelessWidget {
-  const WedgeBullet({super.key, this.color = AppPalette.current.ink, this.size = 10});
+  const WedgeBullet({super.key, this.color, this.size = 10});
 
-  final Color color;
+  final Color? color;
   final double size;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size.square(size),
-      painter: _WedgeBulletPainter(color),
+      painter: _WedgeBulletPainter(color ?? AppPalette.current.ink),
     );
   }
 }

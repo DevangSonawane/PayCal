@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/utils/money.dart';
 import 'package:paycal/core/widgets/avatar.dart';
@@ -80,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (action == 'Search') {
       Navigator.of(context)
-          .push(MaterialPageRoute<void>(builder: (_) => const SearchScreen()));
+          .push(MaterialPageRoute<void>(builder: (_) => SearchScreen()));
       return;
     }
     if (action == 'Add') {
@@ -105,24 +106,24 @@ class _HomeScreenState extends State<HomeScreen> {
     final contacts = MockData.batches.isEmpty
         ? <Member>[]
         : MockData.batches.first.members
-            .where((m) => m.id != me.id)
-            .take(4)
-            .toList();
+              .where((m) => m.id != me.id)
+              .take(4)
+              .toList();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: _HomePalette.current.page,
         body: CustomPaint(
-          painter: const _StripePainter(),
+          painter: _StripePainter(),
           child: SizedBox.expand(
             child: Stack(
               children: [
                 RefreshIndicator(
-                  color: _HomePalette.current.indigo,
+                  color: AppColors.indigo,
                   onRefresh: () async {},
                   child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
+                    physics: AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.fromLTRB(
                       24,
                       40,
@@ -131,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     children: [
                       _TopBar(onTap: _onTopAction),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18),
                       _HeroCard(
                         name: me.name,
                         amount: owed - owe,
@@ -143,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           setState(() {});
                         },
                       ),
-                      const SizedBox(height: 22),
+                      SizedBox(height: 22),
                       _QuickPickRow(
                         contacts: contacts,
                         selected: selected,
@@ -158,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18),
                       _SectionHeader(
                         onCreate: () async {
                           final created = await showCreateBatch(context);
@@ -223,24 +224,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _HomePalette {
   static AppPalette get current => AppPalette.current;
-  static const page = Color(0xFFFFFEFC),
-      lime = Color(0xFFD8FF00),
-      ink = Color(0xFF0A0A0A),
-      indigo = Color(0xFF2014B8),
-      purple = Color(0xFF9B70F2),
-      pink = Color(0xFFF0477F),
-      grey = Color(0xFF8A8A8A),
-      chip = Color(0xFFF1F1F4),
-      hairline = Color(0xFFE6E6EA);
 }
 
 /// Faint vertical pinstripes across the whole screen.
 class _StripePainter extends CustomPainter {
-  const _StripePainter();
+  _StripePainter();
   @override
   void paint(Canvas c, Size s) {
     final p = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [Color(0x080A0A0A), Color(0x080A0A0A), Color(0x000A0A0A)],
@@ -267,13 +259,13 @@ class _TopBar extends StatelessWidget {
       Container(
         width: 34,
         height: 34,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _HomePalette.current.ink,
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.change_history, color: Colors.white, size: 20),
+        child: Icon(Icons.change_history, color: Colors.white, size: 20),
       ),
-      const SizedBox(width: 8),
+      SizedBox(width: 8),
       Text(
         'PayCal',
         style: AppTypography.title.copyWith(
@@ -282,14 +274,14 @@ class _TopBar extends StatelessWidget {
           color: _HomePalette.current.ink,
         ),
       ),
-      const Spacer(),
+      Spacer(),
       IconButton(
         onPressed: () => onTap('Search'),
-        icon: const Icon(Icons.search_rounded, color: _HomePalette.current.ink),
+        icon: Icon(Icons.search_rounded, color: _HomePalette.current.ink),
       ),
       IconButton(
         onPressed: () => onTap('Scan'),
-        icon: const Icon(Icons.qr_code_scanner, color: _HomePalette.current.ink),
+        icon: Icon(Icons.qr_code_scanner, color: _HomePalette.current.ink),
       ),
     ],
   );
@@ -328,7 +320,7 @@ class _HeroCardState extends State<_HeroCard> {
         onTap: _flip,
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: showCode ? 1 : 0),
-          duration: const Duration(milliseconds: 700),
+          duration: Duration(milliseconds: 700),
           curve: Curves.easeOutBack,
           builder: (c, t, _) {
             final lift = math.sin(t * math.pi);
@@ -340,7 +332,9 @@ class _HeroCardState extends State<_HeroCard> {
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: _HomePalette.current.ink.withValues(alpha: lift.abs() * .16),
+                    color: _HomePalette.current.ink.withValues(
+                      alpha: lift.abs() * .16,
+                    ),
                     blurRadius: 10 + 26 * lift.abs(),
                     offset: Offset(0, 4 + 12 * lift.abs()),
                   ),
@@ -401,7 +395,7 @@ class _HeroCardState extends State<_HeroCard> {
   Widget _buildFront(double w) => Stack(
     clipBehavior: Clip.none,
     children: [
-      const Positioned.fill(child: CustomPaint(painter: _HeroPainter())),
+      Positioned.fill(child: CustomPaint(painter: _HeroPainter())),
       // Name block (white area)
       Positioned(
         left: 44,
@@ -410,7 +404,7 @@ class _HeroCardState extends State<_HeroCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Hey',
               style: TextStyle(color: _HomePalette.current.grey, fontSize: 13),
             ),
@@ -435,8 +429,8 @@ class _HeroCardState extends State<_HeroCard> {
         bottom: 20,
         child: Row(
           children: [
-            const _OverlapCircles(),
-            const SizedBox(width: 10),
+            _OverlapCircles(),
+            SizedBox(width: 10),
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -444,12 +438,12 @@ class _HeroCardState extends State<_HeroCard> {
                 children: [
                   Text(
                     widget.amount >= 0 ? 'You are owed:' : 'You owe:',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _HomePalette.current.ink,
                       fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
@@ -494,10 +488,10 @@ class _HeroCardState extends State<_HeroCard> {
           width: 52,
           height: 52,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppPalette.current.card,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Icon(Icons.link_rounded, color: _HomePalette.current.ink),
+          child: Icon(Icons.link_rounded, color: _HomePalette.current.ink),
         ),
       ),
     ],
@@ -505,7 +499,7 @@ class _HeroCardState extends State<_HeroCard> {
 
   Widget _buildBack(double w) => Container(
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppPalette.current.card,
       borderRadius: BorderRadius.circular(28),
       border: Border.all(color: _HomePalette.current.ink, width: 1.5),
     ),
@@ -518,17 +512,13 @@ class _HeroCardState extends State<_HeroCard> {
             Container(
               width: 26,
               height: 26,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: _HomePalette.current.ink,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.qr_code_rounded,
-                color: Colors.white,
-                size: 15,
-              ),
+              child: Icon(Icons.qr_code_rounded, color: Colors.white, size: 15),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               'Scan to pay & split',
               style: AppTypography.label.copyWith(
@@ -538,29 +528,31 @@ class _HeroCardState extends State<_HeroCard> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         QrImageView(
           data: 'paycal://user/${MockData.meId}',
           version: QrVersions.auto,
           size: 104,
-          eyeStyle: const QrEyeStyle(
+          eyeStyle: QrEyeStyle(
             eyeShape: QrEyeShape.square,
             color: _HomePalette.current.ink,
           ),
-          dataModuleStyle: const QrDataModuleStyle(
+          dataModuleStyle: QrDataModuleStyle(
             dataModuleShape: QrDataModuleShape.square,
             color: _HomePalette.current.ink,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Tap to flip back',
-              style: AppTypography.caption.copyWith(color: _HomePalette.current.grey),
+              style: AppTypography.caption.copyWith(
+                color: _HomePalette.current.grey,
+              ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             GestureDetector(
               onTap: () async {
                 await SharePlus.instance.share(
@@ -574,14 +566,14 @@ class _HeroCardState extends State<_HeroCard> {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: _HomePalette.current.pink,
                   borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _HomePalette.current.ink, width: 1.5),
+                  border: Border.all(
+                    color: _HomePalette.current.ink,
+                    width: 1.5,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -624,7 +616,7 @@ class _OverlapCircles extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppPalette.current.card,
               shape: BoxShape.circle,
               border: Border.all(color: _HomePalette.current.ink, width: 1.5),
             ),
@@ -636,7 +628,7 @@ class _OverlapCircles extends StatelessWidget {
           child: Container(
             width: 34,
             height: 34,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: _HomePalette.current.pink,
               shape: BoxShape.circle,
             ),
@@ -648,13 +640,10 @@ class _OverlapCircles extends StatelessWidget {
 }
 
 class _HeroPainter extends CustomPainter {
-  const _HeroPainter();
+  _HeroPainter();
   @override
   void paint(Canvas c, Size s) {
-    final rr = RRect.fromRectAndRadius(
-      Offset.zero & s,
-      const Radius.circular(28),
-    );
+    final rr = RRect.fromRectAndRadius(Offset.zero & s, Radius.circular(28));
     c.save();
     c.clipRRect(rr);
 
@@ -728,15 +717,15 @@ class _QuickPickRow extends StatelessWidget {
     child: ListView(
       scrollDirection: Axis.horizontal,
       clipBehavior: Clip.none,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       children: [
         _Pick(
           label: 'Add',
           sub: '',
           onTap: onAdd,
-          child: const Icon(Icons.add, size: 31, color: _HomePalette.current.ink),
+          child: Icon(Icons.add, size: 31, color: _HomePalette.current.ink),
         ),
-        const SizedBox(
+        SizedBox(
           width: 25,
           child: Align(
             alignment: Alignment.topCenter,
@@ -763,7 +752,7 @@ class _QuickPickRow extends StatelessWidget {
 }
 
 class _DashedLinePainter extends CustomPainter {
-  const _DashedLinePainter();
+  _DashedLinePainter();
   @override
   void paint(Canvas c, Size s) {
     final p = Paint()
@@ -793,7 +782,7 @@ class _Pick extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) => Padding(
-    padding: const EdgeInsets.only(right: 10),
+    padding: EdgeInsets.only(right: 10),
     child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(40),
@@ -812,7 +801,10 @@ class _Pick extends StatelessWidget {
                     color: _HomePalette.current.chip,
                     shape: BoxShape.circle,
                     border: selected
-                        ? Border.all(color: _HomePalette.current.ink, width: 1.5)
+                        ? Border.all(
+                            color: _HomePalette.current.ink,
+                            width: 1.5,
+                          )
                         : null,
                   ),
                   child: SizedBox(
@@ -822,7 +814,7 @@ class _Pick extends StatelessWidget {
                   ),
                 ),
                 if (selected)
-                  const Positioned(
+                  Positioned(
                     right: -1,
                     top: -2,
                     child: CircleAvatar(
@@ -833,7 +825,7 @@ class _Pick extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               label,
               maxLines: 1,
@@ -866,8 +858,8 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext c) => Row(
     children: [
-      const WedgeBullet(),
-      const SizedBox(width: 8),
+      WedgeBullet(),
+      SizedBox(width: 8),
       Text(
         'Your groups',
         style: AppTypography.title.copyWith(
@@ -875,7 +867,7 @@ class _SectionHeader extends StatelessWidget {
           color: _HomePalette.current.ink,
         ),
       ),
-      const Spacer(),
+      Spacer(),
       TextButton(
         onPressed: onCreate,
         child: Text(
@@ -911,7 +903,7 @@ class _GroupRow extends StatelessWidget {
         onLongPress: onEdit,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          padding: EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
               Container(
@@ -921,13 +913,13 @@ class _GroupRow extends StatelessWidget {
                   color: _HomePalette.current.ink,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.account_balance_wallet_outlined,
                   color: Colors.white,
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -952,41 +944,52 @@ class _GroupRow extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onCopy,
-                icon: const Icon(
+                icon: Icon(
                   Icons.copy_outlined,
                   size: 20,
                   color: _HomePalette.current.ink,
                 ),
               ),
-              Container(width: 1, height: 22, color: _HomePalette.current.hairline),
-              const Padding(
+              Container(
+                width: 1,
+                height: 22,
+                color: _HomePalette.current.hairline,
+              ),
+              Padding(
                 padding: EdgeInsets.only(left: 6),
-                child: Icon(Icons.chevron_right, color: _HomePalette.current.ink),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: _HomePalette.current.ink,
+                ),
               ),
             ],
           ),
         ),
       ),
       Padding(
-        padding: const EdgeInsets.only(left: 68),
+        padding: EdgeInsets.only(left: 68),
         child: Column(
           children: [
             _amountRow('Your balance', balance),
-            const Divider(height: 18, color: _HomePalette.current.hairline),
+            Divider(height: 18, color: _HomePalette.current.hairline),
             _amountRow('Total spent', spent),
           ],
         ),
       ),
-      const SizedBox(height: 14),
+      SizedBox(height: 14),
     ],
   );
 
   Widget _amountRow(String label, int value) => Row(
     children: [
-      const CircleAvatar(
+      CircleAvatar(
         radius: 14,
         backgroundColor: _HomePalette.current.chip,
-        child: Icon(Icons.currency_rupee, size: 14, color: _HomePalette.current.grey),
+        child: Icon(
+          Icons.currency_rupee,
+          size: 14,
+          color: _HomePalette.current.grey,
+        ),
       ),
       const SizedBox(width: 8),
       Expanded(

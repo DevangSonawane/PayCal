@@ -27,10 +27,10 @@ class NotificationsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.md,
               AppSpacing.xl,
@@ -45,25 +45,28 @@ class NotificationsPage extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppPalette.current.card,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 1.5,
+                      ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chevron_left,
                       size: 26,
                       color: AppPalette.current.ink,
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       width: 34,
                       height: 34,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppPalette.current.pink,
                         shape: BoxShape.circle,
                         border: Border.fromBorderSide(
@@ -91,7 +94,9 @@ class NotificationsPage extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'A quiet nudge when money moves. No spam, no streaks, no guilt trips.',
-                  style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                  style: AppTypography.body.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 _line('New expenses in your batches'),
@@ -119,7 +124,7 @@ class NotificationsPage extends StatelessWidget {
   }
 
   Widget _line(String t) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+    padding: EdgeInsets.only(bottom: AppSpacing.md),
     child: Row(
       children: [
         Container(
@@ -130,7 +135,7 @@ class NotificationsPage extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: AppPalette.current.ink, width: 1.5),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.check_rounded,
             size: 14,
             color: AppPalette.current.ink,

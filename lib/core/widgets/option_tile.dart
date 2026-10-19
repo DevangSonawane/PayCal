@@ -29,7 +29,7 @@ class OptionTile extends StatelessWidget {
       duration: AppMotion.base,
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: selected ? AppPalette.current.lime : Colors.white,
+        color: selected ? AppPalette.current.lime : AppPalette.current.card,
         borderRadius: BorderRadius.circular(AppRadii.tile),
         border: Border.all(color: AppPalette.current.ink, width: 1.5),
       ),

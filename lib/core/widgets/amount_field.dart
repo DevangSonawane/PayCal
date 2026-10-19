@@ -25,7 +25,7 @@ class AmountField extends StatelessWidget {
         vertical: AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppPalette.current.ink, width: 1.5),
       ),
@@ -59,7 +59,9 @@ class AmountField extends StatelessWidget {
                 decimal: true,
               ),
               onChanged: onChanged,
-              style: AppTypography.displayAmount.copyWith(color: AppPalette.current.ink),
+              style: AppTypography.displayAmount.copyWith(
+                color: AppPalette.current.ink,
+              ),
               decoration: InputDecoration(
                 hintText: '0.00',
                 hintStyle: AppTypography.displayAmount.copyWith(

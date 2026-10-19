@@ -26,12 +26,12 @@ class SecondaryButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
+            backgroundColor: AppPalette.current.surface,
             foregroundColor: AppPalette.current.ink,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(color: AppPalette.current.ink, width: 1.5),
+              side: BorderSide(color: AppPalette.current.ink, width: 1.5),
             ),
           ).copyWith(animationDuration: AppMotion.fast),
           child: Row(

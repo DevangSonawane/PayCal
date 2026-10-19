@@ -23,7 +23,7 @@ Future<void> showScanFlow(BuildContext context) {
   return showPopCard<void>(
     context: context,
     title: 'Scan',
-    builder: (dialogContext) => const _ScanFlowBody(),
+    builder: (dialogContext) => _ScanFlowBody(),
   );
 }
 
@@ -58,7 +58,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
       unawaited(previous.stop().then((_) => previous.dispose()));
     }
     final controller = MobileScannerController(
-      formats: const [BarcodeFormat.qrCode],
+      formats: [BarcodeFormat.qrCode],
       autoStart: false,
     );
     _camera = controller;
@@ -123,7 +123,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
 
   void _hint(String message) {
     final now = DateTime.now();
-    if (now.difference(_lastHint) < const Duration(seconds: 2)) return;
+    if (now.difference(_lastHint) < Duration(seconds: 2)) return;
     _lastHint = now;
     showAppToast(context, message);
   }
@@ -163,12 +163,14 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
             shared.isEmpty
                 ? '${member.name} is not in any of your batches. Add them to one to record this.'
                 : 'You share more than one batch with ${member.name}. Where should this land?',
-            style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+            style: AppTypography.caption.copyWith(
+              color: AppPalette.current.grey,
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           for (final b in MockData.batches)
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: EdgeInsets.only(bottom: AppSpacing.sm),
               child: OptionTile(
                 title: shared.any((s) => s.id == b.id)
                     ? b.name
@@ -223,7 +225,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
           ? _buildFound(context)
           : (manualEntry ? _buildManualEntry() : _buildScanning()),
       if (_peer == null) ...[
-        const SizedBox(height: AppSpacing.md),
+        SizedBox(height: AppSpacing.md),
         Text(
           manualEntry
               ? 'Paste a paycal:// code to find your friend.'
@@ -244,7 +246,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppPalette.current.card,
                   borderRadius: BorderRadius.circular(99),
                   border: Border.all(color: AppPalette.current.ink, width: 1.5),
                 ),
@@ -265,7 +267,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
   Widget _buildManualEntry() {
     final codeController = TextEditingController();
     return Column(
-      key: const ValueKey('manual'),
+      key: ValueKey('manual'),
       children: [
         AppTextField(
           label: 'PayCal code',
@@ -273,7 +275,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
           controller: codeController,
           keyboardType: TextInputType.url,
         ),
-        const SizedBox(height: AppSpacing.md),
+        SizedBox(height: AppSpacing.md),
         PrimaryButton(
           label: 'Find them',
           onPressed: () {
@@ -290,7 +292,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
             setState(() => _peer = member);
           },
         ),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         Center(
           child: GestureDetector(
             onTap: () => setState(() {
@@ -313,14 +315,14 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
 
   /// Live viewfinder with a scanning beam sweeping over the camera feed.
   Widget _buildScanning() => Center(
-    key: const ValueKey('scanning'),
+    key: ValueKey('scanning'),
     child: Container(
       width: 220,
       height: 220,
-      margin: const EdgeInsets.only(top: AppSpacing.xs),
+      margin: EdgeInsets.only(top: AppSpacing.xs),
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppPalette.current.card,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppPalette.current.ink, width: 1.5),
       ),
@@ -362,7 +364,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppPalette.current.card,
                 borderRadius: BorderRadius.circular(99),
                 border: Border.all(color: AppPalette.current.ink, width: 1.5),
               ),
@@ -381,13 +383,13 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
   );
 
   Widget _buildFound(BuildContext dialogContext) => Column(
-    key: const ValueKey('found'),
+    key: ValueKey('found'),
     crossAxisAlignment: CrossAxisAlignment.start,
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: AppPalette.current.lime,
           borderRadius: BorderRadius.circular(20),
@@ -396,7 +398,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
         child: Row(
           children: [
             Avatar(initials: _peer!.initials, size: 44),
-            const SizedBox(width: AppSpacing.md),
+            SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,7 +412,9 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
                   ),
                   Text(
                     _landingLine(),
-                    style: AppTypography.caption.copyWith(color: AppPalette.current.ink),
+                    style: AppTypography.caption.copyWith(
+                      color: AppPalette.current.ink,
+                    ),
                   ),
                 ],
               ),
@@ -418,14 +422,14 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
           ],
         ),
       ),
-      const SizedBox(height: AppSpacing.lg),
+      SizedBox(height: AppSpacing.lg),
       _ScanOption(
         icon: Icons.payments_outlined,
         title: 'Pay an expense',
         subtitle: 'Something you paid for them',
         onTap: () => _choose(dialogContext, false),
       ),
-      const SizedBox(height: AppSpacing.sm),
+      SizedBox(height: AppSpacing.sm),
       _ScanOption(
         icon: Icons.call_split_outlined,
         title: 'Split it with them',
@@ -443,13 +447,13 @@ class _CameraError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: Colors.white,
-    padding: const EdgeInsets.all(AppSpacing.lg),
+    color: AppPalette.current.card,
+    padding: EdgeInsets.all(AppSpacing.lg),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.videocam_off_outlined, color: AppPalette.current.grey),
-        const SizedBox(height: AppSpacing.sm),
+        Icon(Icons.videocam_off_outlined, color: AppPalette.current.grey),
+        SizedBox(height: AppSpacing.sm),
         Text(
           detail == 'permissionDenied'
               ? 'Camera permission needed to scan.'
@@ -501,7 +505,7 @@ class _ScanOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: AppPalette.current.card,
     borderRadius: BorderRadius.circular(18),
     child: InkWell(
       onTap: onTap,
@@ -547,7 +551,7 @@ class _ScanOption extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppPalette.current.ink),
+            Icon(Icons.chevron_right, color: AppPalette.current.ink),
           ],
         ),
       ),

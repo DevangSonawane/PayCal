@@ -22,18 +22,18 @@ class InviteScreen extends StatelessWidget {
       barrierDismissible: false,
       builder: (dialogContext) => Center(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          padding: const EdgeInsets.fromLTRB(
+          margin: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          padding: EdgeInsets.fromLTRB(
             AppSpacing.xxl,
             AppSpacing.xl,
             AppSpacing.xxl,
             AppSpacing.xxl,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppPalette.current.card,
             borderRadius: BorderRadius.circular(26),
             border: Border.all(color: AppPalette.current.ink, width: 2),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
                 color: AppColors.floatingShadow,
                 blurRadius: 24,
@@ -47,14 +47,14 @@ class InviteScreen extends StatelessWidget {
               Transform.rotate(
                 angle: -0.07,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppPalette.current.lime,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                    border: Border.all(
+                      color: AppPalette.current.ink,
+                      width: 1.5,
+                    ),
                   ),
                   child: Text(
                     'ALL SET',
@@ -66,14 +66,14 @@ class InviteScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              SizedBox(height: AppSpacing.lg),
               Image.asset(
                 'assets/mascot/penny_happy.png',
                 width: 104,
                 height: 104,
                 fit: BoxFit.contain,
               ),
-              const SizedBox(height: AppSpacing.md),
+              SizedBox(height: AppSpacing.md),
               Text(
                 'You are all set!',
                 textAlign: TextAlign.center,
@@ -82,17 +82,19 @@ class InviteScreen extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
+              SizedBox(height: AppSpacing.sm),
               Text(
                 'Your first batch is ready to roll. Go split something.',
                 textAlign: TextAlign.center,
-                style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                style: AppTypography.body.copyWith(
+                  color: AppPalette.current.grey,
+                ),
               ),
-              const SizedBox(height: AppSpacing.xl),
+              SizedBox(height: AppSpacing.xl),
               PrimaryButton(
                 label: 'Start splitting',
                 onPressed: () => Navigator.of(dialogContext).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const MainShell()),
+                  MaterialPageRoute(builder: (_) => MainShell()),
                   (r) => false,
                 ),
               ),
@@ -109,10 +111,10 @@ class InviteScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.md,
               AppSpacing.xl,
@@ -126,20 +128,20 @@ class InviteScreen extends StatelessWidget {
                     Container(
                       width: 34,
                       height: 34,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppPalette.current.pink,
                         shape: BoxShape.circle,
                         border: Border.fromBorderSide(
                           BorderSide(color: AppPalette.current.ink, width: 2),
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.group_outlined,
                         size: 19,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         'Add your people',
@@ -151,15 +153,17 @@ class InviteScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.sm),
                 Text(
                   'New members need your approval before they can join.',
-                  style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                  style: AppTypography.body.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  padding: EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: AppPalette.current.lime,
                     borderRadius: BorderRadius.circular(24),
@@ -167,12 +171,12 @@ class InviteScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.bolt_rounded,
                         color: AppPalette.current.ink,
                         size: 26,
                       ),
-                      const SizedBox(width: AppSpacing.md),
+                      SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
                           'Invite now, dodge the “who owes what?” texts later.',
@@ -185,18 +189,21 @@ class InviteScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 Container(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     AppSpacing.lg,
                     AppSpacing.md,
                     AppSpacing.md,
                     AppSpacing.md,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppPalette.current.card,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                    border: Border.all(
+                      color: AppPalette.current.ink,
+                      width: 1.5,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -211,17 +218,17 @@ class InviteScreen extends StatelessWidget {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Clipboard.setData(const ClipboardData(text: link));
+                          Clipboard.setData(ClipboardData(text: link));
                           showAppToast(context, 'Invite link copied');
                         },
                         child: Container(
                           width: 38,
                           height: 38,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppPalette.current.ink,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.copy_rounded,
                             size: 18,
                             color: AppPalette.current.lime,
@@ -231,16 +238,16 @@ class InviteScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 SecondaryButton(
                   label: 'Invite by email or username',
                   onPressed: () => showAppToast(context, 'Invite sent'),
                 ),
-                const Spacer(),
+                Spacer(),
                 PrimaryButton(
                   label: 'Share invite link',
                   onPressed: () async {
-                    Clipboard.setData(const ClipboardData(text: link));
+                    Clipboard.setData(ClipboardData(text: link));
                     try {
                       await SharePlus.instance.share(
                         ShareParams(

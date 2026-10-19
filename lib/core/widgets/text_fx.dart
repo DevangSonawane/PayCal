@@ -8,13 +8,13 @@ class SquigglyUnderline extends StatelessWidget {
   const SquigglyUnderline({
     super.key,
     required this.child,
-    this.color = AppPalette.current.pink,
+    this.color,
     this.amplitude = 3.5,
     this.wavelength = 14,
   });
 
   final Widget child;
-  final Color color;
+  final Color? color;
   final double amplitude;
   final double wavelength;
 
@@ -22,7 +22,7 @@ class SquigglyUnderline extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(
       painter: _SquigglePainter(
-        color: color,
+        color: color ?? AppPalette.current.pink,
         amplitude: amplitude,
         wavelength: wavelength,
       ),
@@ -35,7 +35,7 @@ class SquigglyUnderline extends StatelessWidget {
 }
 
 class _SquigglePainter extends CustomPainter {
-  const _SquigglePainter({
+  _SquigglePainter({
     required this.color,
     required this.amplitude,
     required this.wavelength,
@@ -76,19 +76,15 @@ class _SquigglePainter extends CustomPainter {
 
 /// Paints a slightly skewed lime highlighter swipe behind the child text.
 class MarkerHighlight extends StatelessWidget {
-  const MarkerHighlight({
-    super.key,
-    required this.child,
-    this.color = AppPalette.current.lime,
-  });
+  const MarkerHighlight({super.key, required this.child, this.color});
 
   final Widget child;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _MarkerPainter(color: color),
+      painter: _MarkerPainter(color: color ?? AppPalette.current.lime),
       child: child,
     );
   }

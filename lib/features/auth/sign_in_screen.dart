@@ -33,10 +33,10 @@ class _SignInScreenState extends State<SignInScreen> {
   void _signIn() {
     if (!(_form.currentState?.validate() ?? false)) return;
     setState(() => _busy = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
+    Future.delayed(Duration(milliseconds: 600), () {
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainShell()),
+        MaterialPageRoute(builder: (_) => MainShell()),
         (r) => false,
       );
     });
@@ -47,10 +47,10 @@ class _SignInScreenState extends State<SignInScreen> {
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
-        painter: const PinstripePainter(),
+        painter: PinstripePainter(),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.md,
               AppSpacing.xl,
@@ -67,32 +67,35 @@ class _SignInScreenState extends State<SignInScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppPalette.current.card,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                        border: Border.all(
+                          color: AppPalette.current.ink,
+                          width: 1.5,
+                        ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.chevron_left,
                         size: 26,
                         color: AppPalette.current.ink,
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(height: AppSpacing.xl),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         width: 34,
                         height: 34,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppPalette.current.lime,
                           shape: BoxShape.circle,
                           border: Border.fromBorderSide(
                             BorderSide(color: AppPalette.current.ink, width: 2),
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.waving_hand_rounded,
                           size: 19,
                           color: AppPalette.current.ink,

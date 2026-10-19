@@ -12,7 +12,7 @@ void showAppToast(BuildContext context, String message) {
         backgroundColor: Colors.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
+        duration: Duration(seconds: 3),
         content: Transform.rotate(
           angle: -0.018,
           child: Container(
@@ -20,7 +20,7 @@ void showAppToast(BuildContext context, String message) {
               color: AppPalette.current.ink,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: AppPalette.current.lime, width: 1.5),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
                   color: AppColors.floatingShadow,
                   blurRadius: 16,
@@ -28,11 +28,15 @@ void showAppToast(BuildContext context, String message) {
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.bolt_rounded, color: AppPalette.current.lime, size: 20),
+                Icon(
+                  Icons.bolt_rounded,
+                  color: AppPalette.current.lime,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(

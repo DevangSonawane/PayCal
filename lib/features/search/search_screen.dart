@@ -70,7 +70,7 @@ class _SearchScreenState extends State<SearchScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.xl,
                 AppSpacing.md,
                 AppSpacing.xl,
@@ -84,11 +84,14 @@ class _SearchScreenState extends State<SearchScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppPalette.current.card,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                        border: Border.all(
+                          color: AppPalette.current.ink,
+                          width: 1.5,
+                        ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.chevron_left,
                         size: 26,
                         color: AppPalette.current.ink,
@@ -110,7 +113,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.xl,
                 AppSpacing.md,
                 AppSpacing.xl,
@@ -123,10 +126,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 onChanged: (v) => setState(() => _text = v),
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
             Expanded(
               child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   AppSpacing.xl,
                   0,
@@ -223,7 +226,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _section(String label) => Padding(
-    padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
+    padding: EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
     child: Text(
       label.toUpperCase(),
       style: AppTypography.caption.copyWith(
@@ -242,15 +245,15 @@ class _SearchScreenState extends State<SearchScreen> {
     Widget? trailing,
     required VoidCallback onTap,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    padding: EdgeInsets.only(bottom: AppSpacing.sm),
     child: Material(
-      color: Colors.white,
+      color: AppPalette.current.card,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: AppPalette.current.ink, width: 1.5),
@@ -266,11 +269,14 @@ class _SearchScreenState extends State<SearchScreen> {
                   decoration: BoxDecoration(
                     color: AppPalette.current.lime,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                    border: Border.all(
+                      color: AppPalette.current.ink,
+                      width: 1.5,
+                    ),
                   ),
                   child: Icon(icon, size: 19, color: AppPalette.current.ink),
                 ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,7 +303,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 const SizedBox(width: AppSpacing.sm),
                 trailing,
               ],
-              const Icon(Icons.chevron_right, size: 20, color: AppPalette.current.grey),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppPalette.current.grey,
+              ),
             ],
           ),
         ),

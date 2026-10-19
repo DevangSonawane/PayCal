@@ -69,8 +69,8 @@ class _DraggableSheetState extends State<_DraggableSheet> {
     return TweenAnimationBuilder<double>(
       tween: Tween(end: _offset),
       duration: _dragging
-          ? const Duration(milliseconds: 50)
-          : const Duration(milliseconds: 360),
+          ? Duration(milliseconds: 50)
+          : Duration(milliseconds: 360),
       curve: _dragging ? Curves.linear : Curves.easeOutBack,
       builder: (context, value, child) =>
           Transform.translate(offset: Offset(0, value), child: child),
@@ -78,7 +78,7 @@ class _DraggableSheetState extends State<_DraggableSheet> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppPalette.current.page,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -98,14 +98,14 @@ class _DraggableSheetState extends State<_DraggableSheet> {
                   Container(
                     width: 40,
                     height: 4,
-                    margin: const EdgeInsets.only(top: AppSpacing.lg),
+                    margin: EdgeInsets.only(top: AppSpacing.lg),
                     decoration: BoxDecoration(
                       color: AppPalette.current.ink,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       AppSpacing.xl,
                       AppSpacing.md,
                       AppSpacing.xl,
@@ -122,7 +122,7 @@ class _DraggableSheetState extends State<_DraggableSheet> {
                             ),
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.drag_indicator_rounded,
                           color: AppPalette.current.grey,
                           size: 20,
@@ -133,7 +133,7 @@ class _DraggableSheetState extends State<_DraggableSheet> {
                 ],
               ),
             ),
-            const Divider(height: 1, color: AppPalette.current.hairline),
+            Divider(height: 1, color: AppPalette.current.hairline),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
