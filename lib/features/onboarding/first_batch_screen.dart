@@ -181,12 +181,16 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                   selected: _tab,
                   onSelect: (i) => setState(() => _tab = i),
                 ),
-                SizedBox(height: AppSpacing.xl),
+                SizedBox(height: AppSpacing.sm),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: Duration(milliseconds: 420),
                     switchInCurve: Curves.easeOutBack,
                     switchOutCurve: Curves.easeInCubic,
+                    layoutBuilder: (currentChild, previousChildren) => Stack(
+                      alignment: Alignment.topCenter,
+                      children: [...previousChildren, ?currentChild],
+                    ),
                     transitionBuilder: (child, anim) => FadeTransition(
                       opacity: anim,
                       child: SlideTransition(

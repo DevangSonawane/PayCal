@@ -74,6 +74,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/logo/
     - assets/mascot/
     - assets/brand/
     - assets/onboarding/
