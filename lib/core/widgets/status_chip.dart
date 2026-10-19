@@ -15,34 +15,34 @@ class StatusChip extends StatelessWidget {
   Color get _text {
     switch (status) {
       case ChipStatus.pending:
-        return AppColors.pendingText;
+        return AppPalette.current.pendingText;
       case ChipStatus.confirmed:
-        return AppColors.owedText;
+        return AppPalette.current.owedText;
       case ChipStatus.selfManaged:
-        return AppColors.textSecondary;
+        return AppPalette.current.textSecondary;
       case ChipStatus.disputed:
-        return AppColors.oweText;
+        return AppPalette.current.oweText;
       case ChipStatus.outstanding:
-        return AppColors.textSecondary;
+        return AppPalette.current.textSecondary;
       case ChipStatus.paid:
-        return AppColors.owedText;
+        return AppPalette.current.owedText;
     }
   }
 
   Color get _bg {
     switch (status) {
       case ChipStatus.pending:
-        return AppColors.pendingTint;
+        return AppPalette.current.pendingTint;
       case ChipStatus.confirmed:
-        return AppColors.owedTint;
+        return AppPalette.current.owedTint;
       case ChipStatus.selfManaged:
-        return AppColors.surface;
+        return AppPalette.current.surface;
       case ChipStatus.disputed:
-        return AppColors.oweTint;
+        return AppPalette.current.oweTint;
       case ChipStatus.outstanding:
-        return AppColors.surface;
+        return AppPalette.current.surface;
       case ChipStatus.paid:
-        return AppColors.owedTint;
+        return AppPalette.current.owedTint;
     }
   }
 
@@ -66,8 +66,14 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-      decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(AppRadii.chipPill)),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(AppRadii.chipPill),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

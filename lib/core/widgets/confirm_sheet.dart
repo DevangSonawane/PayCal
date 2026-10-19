@@ -15,7 +15,10 @@ Future<bool?> showConfirmSheet({
   return showAppBottomSheet<bool>(
     context: context,
     title: title,
-    builder: (_) => Text(body, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+    builder: (_) => Text(
+      body,
+      style: AppTypography.body.copyWith(color: AppPalette.current.textSecondary),
+    ),
     footer: Column(
       children: [
         PrimaryButton(
@@ -25,7 +28,10 @@ Future<bool?> showConfirmSheet({
         const SizedBox(height: AppSpacing.sm),
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: Text('Cancel', style: AppTypography.label.copyWith(color: AppColors.textPrimary)),
+          child: Text(
+            'Cancel',
+            style: AppTypography.label.copyWith(color: AppPalette.current.text),
+          ),
         ),
       ],
     ),

@@ -1,16 +1,22 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/quiet_text_button.dart';
 import 'package:paycal/features/auth/notifications_sheet.dart';
-import 'package:paycal/features/onboarding/first_batch_screen.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
-  const VerifyEmailScreen({super.key, required this.email, required this.google, required this.draft});
+  const VerifyEmailScreen({
+    super.key,
+    required this.email,
+    required this.google,
+    required this.draft,
+  });
   final String email;
   final bool google;
   final OnboardingDraft draft;
@@ -47,11 +53,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       await Future.delayed(const Duration(milliseconds: 400));
     }
     if (!mounted) return;
-    await showNotificationsSheet(context);
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => FirstBatchScreen(draft: widget.draft)),
-      (r) => r.isFirst,
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NotificationsPage(draft: widget.draft)),
     );
   }
 
@@ -62,29 +65,97 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _continue());
     }
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(backgroundColor: AppColors.bg, elevation: 0, leading: const BackButton(color: AppColors.textPrimary)),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Check your inbox', style: AppTypography.headline.copyWith(color: AppColors.textPrimary)),
-              const SizedBox(height: AppSpacing.sm),
-              Text('We sent a verification link to ${widget.email}.', style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
-              const Spacer(),
-              PrimaryButton(label: 'I verified — continue', onPressed: _continue),
-              const SizedBox(height: AppSpacing.md),
-              Center(
-                child: QuietTextButton(
-                  label: _cooldown > 0 ? 'Resend in ${_cooldown}s' : 'Resend email',
-                  onPressed: _cooldown > 0 ? () {} : _resend,
+      backgroundColor: AppPalette.current.page,
+      body: CustomPaint(
+        painter: const PinstripePainter(),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.md,
+              AppSpacing.xl,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                    ),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      size: 26,
+                      color: AppPalette.current.ink,
+                    ),
+                  ),
                 ),
-              ),
-              Center(child: QuietTextButton(label: 'Use a different email', onPressed: () => Navigator.of(context).pop())),
-              const SizedBox(height: AppSpacing.lg),
-            ],
+                const SizedBox(height: AppSpacing.xxl),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: const BoxDecoration(
+                        color: AppPalette.current.purple,
+                        shape: BoxShape.circle,
+                        border: Border.fromBorderSide(
+                          BorderSide(color: AppPalette.current.ink, width: 2),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.mail_outline_rounded,
+                        size: 19,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Check your inbox',
+                        style: AppTypography.headline.copyWith(
+                          color: AppPalette.current.ink,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'We sent a verification link to ${widget.email}. Tap it and you are in.',
+                  style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                ),
+                const Spacer(),
+                PrimaryButton(
+                  label: 'I verified — continue',
+                  onPressed: _continue,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Center(
+                  child: QuietTextButton(
+                    label: _cooldown > 0
+                        ? 'Resend in ${_cooldown}s'
+                        : 'Resend email',
+                    onPressed: _cooldown > 0 ? () {} : _resend,
+                  ),
+                ),
+                Center(
+                  child: QuietTextButton(
+                    label: 'Use a different email',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ),
           ),
         ),
       ),

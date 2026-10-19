@@ -13,17 +13,35 @@ class DesignGallery extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppPalette.current.bg,
       appBar: AppBar(title: const Text('Gallery')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Display', style: AppTypography.display.copyWith(color: AppColors.textPrimary)),
-            Text('Headline', style: AppTypography.headline.copyWith(color: AppColors.textPrimary)),
-            Text('Title', style: AppTypography.title.copyWith(color: AppColors.textPrimary)),
-            Text('Body large', style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary)),
+            Text(
+              'Display',
+              style: AppTypography.display.copyWith(
+                color: AppPalette.current.text,
+              ),
+            ),
+            Text(
+              'Headline',
+              style: AppTypography.headline.copyWith(
+                color: AppPalette.current.text,
+              ),
+            ),
+            Text(
+              'Title',
+              style: AppTypography.title.copyWith(color: AppPalette.current.text),
+            ),
+            Text(
+              'Body large',
+              style: AppTypography.bodyLarge.copyWith(
+                color: AppPalette.current.textSecondary,
+              ),
+            ),
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(label: 'Primary', onPressed: () {}),
             const SizedBox(height: AppSpacing.md),
@@ -38,7 +56,13 @@ class DesignGallery extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            const Row(children: [Avatar(initials: 'AS'), SizedBox(width: 8), Avatar(initials: 'RK')]),
+            const Row(
+              children: [
+                Avatar(initials: 'AS'),
+                SizedBox(width: 8),
+                Avatar(initials: 'RK'),
+              ],
+            ),
           ],
         ),
       ),

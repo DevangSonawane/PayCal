@@ -13,6 +13,19 @@ class AppColors {
   static const Color textDisabled = Color(0xFFB8B8B3);
   static const Color onPrimary = Color(0xFFFFFFFF);
 
+  // Signature design-language tokens (off-white page, ink borders, bold accents).
+  static const Color ink = Color(0xFF0A0A0A);
+  static const Color page = Color(0xFFFFFEFC);
+  static const Color lime = Color(0xFFD8FF00);
+  static const Color pink = Color(0xFFF0477F);
+  static const Color purple = Color(0xFF9B70F2);
+  static const Color indigo = Color(0xFF2014B8);
+  static const Color teal = Color(0xFF0E7C66);
+  static const Color brick = Color(0xFFB8321E);
+  static const Color grey = Color(0xFF8A8A8A);
+  static const Color chip = Color(0xFFF1F1F4);
+  static const Color hairline = Color(0xFFE6E6EA);
+
   static const Color owedText = Color(0xFF2F6F52);
   static const Color owedTint = Color(0xFFE9F2EC);
   static const Color oweText = Color(0xFFA4472F);
@@ -22,9 +35,8 @@ class AppColors {
   static const Color infoText = Color(0xFF385878);
   static const Color infoTint = Color(0xFFE9EFF5);
 
-  // Black at 24% for scrim, 8% for glass edge, 6% shadow.
+  // Black at 24% for scrim and 6% shadow.
   static const Color scrim = Color(0x3D000000);
-  static const Color glassEdge = Color(0x14000000);
   static const Color floatingShadow = Color(0x0F000000);
 
   static const List<String> tintNames = [
@@ -70,4 +82,109 @@ class AppColors {
     final name = tintNames[h % tintNames.length];
     return tintFg[name]!;
   }
+}
+
+/// Brightness-aware semantic palette. Screens and widgets read
+/// `AppPalette.current` so a dark-mode switch repaints everything at once.
+@immutable
+class AppPalette {
+  const AppPalette({
+    required this.page,
+    required this.ink,
+    required this.lime,
+    required this.pink,
+    required this.purple,
+    required this.grey,
+    required this.chip,
+    required this.hairline,
+    required this.border,
+    required this.bg,
+    required this.surface,
+    required this.text,
+    required this.textSecondary,
+    required this.textTertiary,
+    required this.owedText,
+    required this.oweText,
+    this.owedTint,
+    this.oweTint,
+    this.pendingText,
+    this.pendingTint,
+    required this.teal,
+    required this.scrim,
+  });
+
+  final Color page;
+  final Color ink;
+  final Color lime;
+  final Color pink;
+  final Color purple;
+  final Color grey;
+  final Color chip;
+  final Color hairline;
+  final Color border;
+  final Color bg;
+  final Color surface;
+  final Color text;
+  final Color textSecondary;
+  final Color textTertiary;
+  final Color owedText;
+  final Color oweText;
+  final Color? owedTint;
+  final Color? oweTint;
+  final Color? pendingText;
+  final Color? pendingTint;
+  final Color teal;
+  final Color scrim;
+
+  static const light = AppPalette(
+    page: Color(0xFFFFFEFC),
+    ink: Color(0xFF0A0A0A),
+    lime: Color(0xFFD8FF00),
+    pink: Color(0xFFF0477F),
+    purple: Color(0xFF9B70F2),
+    grey: Color(0xFF8A8A8A),
+    chip: Color(0xFFF1F1F4),
+    hairline: Color(0xFFE6E6EA),
+    border: Color(0xFFECECE8),
+    bg: Color(0xFFFFFFFF),
+    surface: Color(0xFFF7F7F5),
+    text: Color(0xFF111111),
+    textSecondary: Color(0xFF5F5F5B),
+    textTertiary: Color(0xFF767672),
+    owedText: Color(0xFF2F6F52),
+    oweText: Color(0xFFA4472F),
+    owedTint: Color(0xFFE9F2EC),
+    oweTint: Color(0xFFF7EBE6),
+    pendingText: Color(0xFF845A10),
+    pendingTint: Color(0xFFFAF2E1),
+    teal: Color(0xFF0E7C66),
+    scrim: Color(0x3D000000),
+  );
+
+  static const dark = AppPalette(
+    page: Color(0xFF0E0E0E),
+    ink: Color(0xFFF5F5F2),
+    lime: Color(0xFFD8FF00),
+    pink: Color(0xFFF0477F),
+    purple: Color(0xFF9B70F2),
+    grey: Color(0xFF9A9A94),
+    chip: Color(0xFF1E1E1C),
+    hairline: Color(0xFF2A2A28),
+    border: Color(0xFF2A2A28),
+    bg: Color(0xFF161615),
+    surface: Color(0xFF1E1E1C),
+    text: Color(0xFFF5F5F2),
+    textSecondary: Color(0xFFB5B5AE),
+    textTertiary: Color(0xFF8A8A84),
+    owedText: Color(0xFF7BE382),
+    oweText: Color(0xFFF08A9B),
+    owedTint: Color(0xFF14301F),
+    oweTint: Color(0xFF3A1A20),
+    pendingText: Color(0xFFE8C96A),
+    pendingTint: Color(0xFF33301B),
+    teal: Color(0xFF3EC9A7),
+    scrim: Color(0x99000000),
+  );
+
+  static AppPalette current = light;
 }

@@ -2,7 +2,7 @@ import 'models.dart';
 
 class MockData {
   static const meId = 'me';
-  static final me = Member(id: meId, name: 'You', isAdmin: true);
+  static Member me = Member(id: meId, name: 'You', isAdmin: true);
 
   static final batches = <Batch>[
     Batch(

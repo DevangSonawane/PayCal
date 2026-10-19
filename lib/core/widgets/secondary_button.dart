@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
-import 'package:paycal/core/theme/app_radii.dart';
+import 'package:paycal/core/theme/app_motion.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/widgets/press_scale.dart';
 
 class SecondaryButton extends StatelessWidget {
-  const SecondaryButton({super.key, required this.label, required this.onPressed, this.leading});
+  const SecondaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.leading,
+  });
 
   final String label;
   final VoidCallback? onPressed;
@@ -15,21 +21,35 @@ class SecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: AppSpacing.buttonHeightSm,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.inputButton)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (leading != null) ...[leading!, const SizedBox(width: AppSpacing.sm)],
-            Text(label, style: AppTypography.label.copyWith(color: AppColors.textPrimary)),
-          ],
+      height: AppSpacing.buttonHeight,
+      child: PressScale(
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: AppPalette.current.ink,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: AppPalette.current.ink, width: 1.5),
+            ),
+          ).copyWith(animationDuration: AppMotion.fast),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: AppSpacing.sm),
+              ],
+              Text(
+                label,
+                style: AppTypography.label.copyWith(
+                  color: AppPalette.current.ink,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

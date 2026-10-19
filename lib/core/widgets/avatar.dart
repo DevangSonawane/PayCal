@@ -4,29 +4,91 @@ import 'package:paycal/core/theme/app_radii.dart';
 import 'package:paycal/core/theme/app_typography.dart';
 
 class Avatar extends StatelessWidget {
-  const Avatar({super.key, required this.initials, this.size = 32});
+  const Avatar({
+    super.key,
+    required this.initials,
+    this.size = 32,
+    this.imageUrl,
+    this.imageAsset,
+  });
 
   final String initials;
   final double size;
+  final String? imageUrl;
+  final String? imageAsset;
 
   @override
   Widget build(BuildContext context) {
     final bg = AppColors.tintBgFor(initials);
     final fg = AppColors.tintFgFor(initials);
+    final image = imageAsset != null
+        ? AssetImage(imageAsset!) as ImageProvider<Object>
+        : imageUrl != null
+        ? NetworkImage(imageUrl!)
+        : null;
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadii.avatar)),
-      child: Center(
-        child: Text(initials, style: AppTypography.label.copyWith(color: fg)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.avatar),
       ),
+      clipBehavior: Clip.antiAlias,
+      child: image == null
+          ? Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(painter: _AvatarWedgePainter(fg)),
+                ),
+                Center(
+                  child: Text(
+                    initials,
+                    style: AppTypography.label.copyWith(color: fg),
+                  ),
+                ),
+              ],
+            )
+          : Image(
+              image: image,
+              fit: BoxFit.cover,
+              errorBuilder: (_, error, stackTrace) => Center(
+                child: Text(
+                  initials,
+                  style: AppTypography.label.copyWith(color: fg),
+                ),
+              ),
+            ),
     );
   }
 }
 
+class _AvatarWedgePainter extends CustomPainter {
+  const _AvatarWedgePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.42)
+      ..lineTo(size.width * 0.58, 0)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color.withValues(alpha: 0.35));
+  }
+
+  @override
+  bool shouldRepaint(covariant _AvatarWedgePainter old) => old.color != color;
+}
+
 /// Overlapping member avatars with a 2px ring, per the component spec.
 class AvatarStack extends StatelessWidget {
-  const AvatarStack({super.key, required this.initials, this.size = 32, this.max = 3});
+  const AvatarStack({
+    super.key,
+    required this.initials,
+    this.size = 32,
+    this.max = 3,
+  });
 
   final List<String> initials;
   final double size;
@@ -47,7 +109,7 @@ class AvatarStack extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadii.avatar),
-                  border: Border.all(color: AppColors.bg, width: 2),
+                  border: Border.all(color: AppPalette.current.bg, width: 2),
                 ),
                 child: Avatar(initials: shown[i], size: size - 4),
               ),
@@ -59,11 +121,18 @@ class AvatarStack extends StatelessWidget {
                 width: size - 4,
                 height: size - 4,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppPalette.current.surface,
                   borderRadius: BorderRadius.circular(AppRadii.avatar),
-                  border: Border.all(color: AppColors.bg, width: 2),
+                  border: Border.all(color: AppPalette.current.bg, width: 2),
                 ),
-                child: Center(child: Text('+$extra', style: AppTypography.caption.copyWith(color: AppColors.textSecondary))),
+                child: Center(
+                  child: Text(
+                    '+$extra',
+                    style: AppTypography.caption.copyWith(
+                      color: AppPalette.current.textSecondary,
+                    ),
+                  ),
+                ),
               ),
             ),
         ],

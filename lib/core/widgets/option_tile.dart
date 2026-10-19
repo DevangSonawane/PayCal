@@ -5,6 +5,7 @@ import 'package:paycal/core/theme/app_motion.dart';
 import 'package:paycal/core/theme/app_radii.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/widgets/quirky_check.dart';
 
 class OptionTile extends StatelessWidget {
   const OptionTile({
@@ -28,12 +29,9 @@ class OptionTile extends StatelessWidget {
       duration: AppMotion.base,
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: selected ? AppColors.surface : AppColors.bg,
+        color: selected ? AppPalette.current.lime : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.tile),
-        border: Border.all(
-          color: selected ? AppColors.textPrimary : AppColors.border,
-          width: selected ? 1.5 : 1,
-        ),
+        border: Border.all(color: AppPalette.current.ink, width: 1.5),
       ),
       child: Material(
         color: Colors.transparent,
@@ -41,29 +39,44 @@ class OptionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.tile),
           onTap: () {
             HapticFeedback.selectionClick();
+            SystemSound.play(SystemSoundType.click);
             onTap();
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: Row(
               children: [
-                if (leading != null) ...[leading!, const SizedBox(width: AppSpacing.md)],
+                if (leading != null) ...[
+                  leading!,
+                  const SizedBox(width: AppSpacing.md),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: AppTypography.titleSmall.copyWith(color: AppColors.textPrimary)),
+                      Text(
+                        title,
+                        style: AppTypography.titleSmall.copyWith(
+                          color: AppPalette.current.ink,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                       if (support != null) ...[
                         const SizedBox(height: AppSpacing.xs),
-                        Text(support!, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+                        Text(
+                          support!,
+                          style: AppTypography.caption.copyWith(
+                            color: AppPalette.current.grey,
+                          ),
+                        ),
                       ],
                     ],
                   ),
                 ),
-                if (selected)
-                  const Icon(Icons.check_circle, color: AppColors.textPrimary, size: 24)
-                else
-                  const Icon(Icons.circle_outlined, color: AppColors.borderStrong, size: 24),
+                QuirkyCheck(selected: selected, size: 24),
               ],
             ),
           ),

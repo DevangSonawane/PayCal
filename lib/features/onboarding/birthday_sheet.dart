@@ -5,7 +5,20 @@ import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/widgets/app_bottom_sheet.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 
-const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 int _daysIn(int year, int month) => DateTime(year, month + 1, 0).day;
 
@@ -58,7 +71,9 @@ Future<DateTime?> showBirthdaySheet({
               label: 'Done',
               onPressed: () {
                 var picked = DateTime(year, month, day);
-                if (picked.isAfter(maxDate)) picked = DateTime(maxDate.year, maxDate.month, maxDate.day);
+                if (picked.isAfter(maxDate)) {
+                  picked = DateTime(maxDate.year, maxDate.month, maxDate.day);
+                }
                 Navigator.of(sheetContext).pop(picked);
               },
             ),
@@ -80,12 +95,20 @@ Widget _wheel({
       itemExtent: 44,
       diameterRatio: 1.4,
       physics: const FixedExtentScrollPhysics(),
-      controller: FixedExtentScrollController(initialItem: initial.clamp(0, count - 1)),
+      controller: FixedExtentScrollController(
+        initialItem: initial.clamp(0, count - 1),
+      ),
       onSelectedItemChanged: onSelect,
       childDelegate: ListWheelChildBuilderDelegate(
         childCount: count,
         builder: (context, i) => Center(
-          child: Text(label(i), style: AppTypography.titleSmall.copyWith(color: AppColors.textPrimary)),
+          child: Text(
+            label(i),
+            style: AppTypography.titleSmall.copyWith(
+              color: AppPalette.current.ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     ),

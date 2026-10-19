@@ -4,7 +4,14 @@ import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
 
 class ListRow extends StatelessWidget {
-  const ListRow({super.key, required this.leading, required this.title, this.support, this.trailing, this.onTap});
+  const ListRow({
+    super.key,
+    required this.leading,
+    required this.title,
+    this.support,
+    this.trailing,
+    this.onTap,
+  });
 
   final Widget leading;
   final String title;
@@ -26,10 +33,20 @@ class ListRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTypography.titleSmall.copyWith(color: AppColors.textPrimary)),
+                  Text(
+                    title,
+                    style: AppTypography.titleSmall.copyWith(
+                      color: AppPalette.current.text,
+                    ),
+                  ),
                   if (support != null) ...[
                     const SizedBox(height: 2),
-                    Text(support!, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      support!,
+                      style: AppTypography.body.copyWith(
+                        color: AppPalette.current.textSecondary,
+                      ),
+                    ),
                   ],
                 ],
               ),

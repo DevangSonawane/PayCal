@@ -58,7 +58,11 @@ class ExpenseIcon extends StatelessWidget {
         color: AppColors.tintBgFor(category),
         borderRadius: BorderRadius.circular(AppRadii.avatar),
       ),
-      child: Icon(iconFor(category), color: AppColors.tintFgFor(category), size: size * 0.5),
+      child: Icon(
+        iconFor(category),
+        color: AppColors.tintFgFor(category),
+        size: size * 0.5,
+      ),
     );
   }
 }

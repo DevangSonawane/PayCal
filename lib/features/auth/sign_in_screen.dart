@@ -6,6 +6,7 @@ import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/utils/validators.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
+import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/quiet_text_button.dart';
 import 'package:paycal/core/widgets/secondary_button.dart';
 import 'package:paycal/features/shell/main_shell.dart';
@@ -34,42 +35,126 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() => _busy = true);
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const MainShell()), (r) => false);
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainShell()),
+        (r) => false,
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(backgroundColor: AppColors.bg, elevation: 0, leading: const BackButton(color: AppColors.textPrimary)),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: Form(
-            key: _form,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Welcome back', style: AppTypography.headline.copyWith(color: AppColors.textPrimary)),
-                const SizedBox(height: AppSpacing.xxl),
-                SecondaryButton(
-                  label: 'Continue with Google',
-                  leading: SvgPicture.asset('assets/brand/google_g.svg', width: 20, height: 20),
-                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const MainShell()), (r) => false),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(label: 'Email', hint: 'you@example.com', controller: _email, validator: Validators.email, keyboardType: TextInputType.emailAddress),
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(label: 'Password', hint: 'Your password', controller: _password, obscureText: true, validator: Validators.password),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: QuietTextButton(label: 'Forgot password?', onPressed: () {}),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                PrimaryButton(label: 'Sign in', onPressed: _signIn, loading: _busy),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
+      backgroundColor: AppPalette.current.page,
+      body: CustomPaint(
+        painter: const PinstripePainter(),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.md,
+              AppSpacing.xl,
+              AppSpacing.xl,
+            ),
+            child: Form(
+              key: _form,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                      ),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        size: 26,
+                        color: AppPalette.current.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: const BoxDecoration(
+                          color: AppPalette.current.lime,
+                          shape: BoxShape.circle,
+                          border: Border.fromBorderSide(
+                            BorderSide(color: AppPalette.current.ink, width: 2),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.waving_hand_rounded,
+                          size: 19,
+                          color: AppPalette.current.ink,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          'Welcome back',
+                          style: AppTypography.headline.copyWith(
+                            color: AppPalette.current.ink,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  SecondaryButton(
+                    label: 'Continue with Google',
+                    leading: SvgPicture.asset(
+                      'assets/brand/google_g.svg',
+                      width: 20,
+                      height: 20,
+                    ),
+                    onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const MainShell()),
+                      (r) => false,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppTextField(
+                    label: 'Email',
+                    hint: 'you@example.com',
+                    controller: _email,
+                    validator: Validators.email,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppTextField(
+                    label: 'Password',
+                    hint: 'Your password',
+                    controller: _password,
+                    obscureText: true,
+                    validator: Validators.password,
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: QuietTextButton(
+                      label: 'Forgot password?',
+                      onPressed: () {},
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PrimaryButton(
+                    label: 'Sign in',
+                    onPressed: _signIn,
+                    loading: _busy,
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
+              ),
             ),
           ),
         ),

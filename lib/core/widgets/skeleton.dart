@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 
 class Skeleton extends StatelessWidget {
-  const Skeleton({super.key, this.width = 120, this.height = 16, this.radius = 12});
+  const Skeleton({
+    super.key,
+    this.width = 120,
+    this.height = 16,
+    this.radius = 12,
+  });
 
   final double width;
   final double height;
@@ -14,7 +19,7 @@ class Skeleton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppPalette.current.surface,
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -33,7 +38,7 @@ class SkeletonParagraph extends StatelessWidget {
       width: width,
       height: 20,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppPalette.current.surface,
         borderRadius: BorderRadius.circular(12),
       ),
     );

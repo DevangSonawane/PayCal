@@ -3,9 +3,15 @@ import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/utils/validators.dart';
+import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/models.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
+import 'package:paycal/core/widgets/app_toast.dart';
+import 'package:paycal/core/widgets/confetti_burst.dart';
+import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/segmented_control.dart';
+import 'package:paycal/core/widgets/sticker_pill.dart';
 import 'package:paycal/features/onboarding/invite_screen.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 import 'package:paycal/features/onboarding/onboarding_flow.dart';
@@ -29,9 +35,16 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
   @override
   void initState() {
     super.initState();
-    final role = roles.firstWhere((r) => r.id == widget.draft.role, orElse: () => roles[1]);
+    final role = roles.firstWhere(
+      (r) => r.id == widget.draft.role,
+      orElse: () => roles[1],
+    );
     _name = TextEditingController(text: role.batchHint);
-    _cats = List.of(widget.draft.splitTypes.isEmpty ? role.categories : widget.draft.splitTypes);
+    _cats = List.of(
+      widget.draft.splitTypes.isEmpty
+          ? role.categories
+          : widget.draft.splitTypes,
+    );
   }
 
   @override
@@ -42,41 +55,156 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
   }
 
   void _continue() {
-    if (_tab == 0 && (Validators.batchName(_name.text) != null || _cats.isEmpty)) {
+    if (_tab == 1 && _code.text.trim().isEmpty) {
+      showAppToast(context, 'Paste the invite link or code first');
+      return;
+    }
+    if (_tab == 0 &&
+        (Validators.batchName(_name.text) != null || _cats.isEmpty)) {
       if (Validators.batchName(_name.text) != null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Give your batch a name.')));
+        showAppToast(
+          context,
+          'This batch needs a name — even "The Fund" works.',
+        );
         return;
       }
       if (_cats.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick at least one category.')));
+        showAppToast(
+          context,
+          'Pick at least one — it knows where the money goes.',
+        );
         return;
       }
     }
+    // Apply the onboarding answers to the live data: the batch the user just
+    // named becomes a real batch, and the household size fills it with
+    // placeholder members so the demo has someone to split with.
+    final household = widget.draft.householdSize.clamp(1, 10);
+    final members = <Member>[
+      MockData.me,
+      for (var i = 1; i < household; i++)
+        Member(id: 'ob$i', name: 'Housemate $i'),
+    ];
+    MockData.batches.add(
+      Batch(
+        id: 'ob${DateTime.now().millisecondsSinceEpoch}',
+        name: _name.text.trim(),
+        currency: _currency,
+        members: members,
+        categories: _cats.isEmpty ? ['other'] : _cats,
+      ),
+    );
     widget.draft.clear();
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const InviteScreen()));
+    showConfettiBurst(context);
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const InviteScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(backgroundColor: AppColors.bg, elevation: 0, leading: const BackButton(color: AppColors.textPrimary)),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Set up your first batch', style: AppTypography.headline.copyWith(color: AppColors.textPrimary)),
-              const SizedBox(height: AppSpacing.lg),
-              SegmentedControl(tabs: const ['Create a batch', 'Join with a link'], selected: _tab, onSelect: (i) => setState(() => _tab = i)),
-              const SizedBox(height: AppSpacing.xxl),
-              Expanded(
-                child: SingleChildScrollView(child: _tab == 0 ? _create() : _join()),
-              ),
-              PrimaryButton(label: _tab == 0 ? 'Create batch' : 'Request to join', onPressed: _continue),
-              const SizedBox(height: AppSpacing.lg),
-            ],
+      backgroundColor: AppPalette.current.page,
+      body: CustomPaint(
+        painter: const PinstripePainter(),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.md,
+              AppSpacing.xl,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                        ),
+                        child: const Icon(
+                          Icons.chevron_left,
+                          size: 26,
+                          color: AppPalette.current.ink,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: const BoxDecoration(
+                        color: AppPalette.current.lime,
+                        shape: BoxShape.circle,
+                        border: Border.fromBorderSide(
+                          BorderSide(color: AppPalette.current.ink, width: 2),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 19,
+                        color: AppPalette.current.ink,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Your first batch',
+                        style: AppTypography.headline.copyWith(
+                          color: AppPalette.current.ink,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Batches keep shared money in one tidy place. Name it, pick categories, done.',
+                  style: AppTypography.body.copyWith(color: AppPalette.current.grey),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                SegmentedControl(
+                  tabs: const ['Create a batch', 'Join with a link'],
+                  selected: _tab,
+                  onSelect: (i) => setState(() => _tab = i),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 420),
+                    switchInCurve: Curves.easeOutBack,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.05, 0),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      key: ValueKey(_tab),
+                      child: _tab == 0 ? _create() : _join(),
+                    ),
+                  ),
+                ),
+                PrimaryButton(
+                  label: _tab == 0 ? 'Create batch' : 'Request to join',
+                  onPressed: _continue,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ),
           ),
         ),
       ),
@@ -89,52 +217,79 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
       children: [
         AppTextField(label: 'Batch name', controller: _name),
         const SizedBox(height: AppSpacing.lg),
-        Text('Currency', style: AppTypography.label.copyWith(color: AppColors.textPrimary)),
+        Text(
+          'Currency',
+          style: AppTypography.label.copyWith(
+            color: AppPalette.current.ink,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.sm,
           children: currencies
-              .map((c) => GestureDetector(
-                    onTap: () => setState(() => _currency = c),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: _currency == c ? AppColors.surface : AppColors.bg,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: _currency == c ? AppColors.textPrimary : AppColors.border),
-                      ),
-                      child: Text(c, style: AppTypography.label.copyWith(color: AppColors.textPrimary)),
-                    ),
-                  ))
+              .map(
+                (c) => StickerPill(
+                  label: c,
+                  selected: _currency == c,
+                  vertical: AppSpacing.sm,
+                  onTap: () => setState(() => _currency = c),
+                ),
+              )
               .toList(),
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
           'Everyone in this batch uses this currency. You can change it later; amounts will not be converted.',
-          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+          style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text('Categories', style: AppTypography.label.copyWith(color: AppColors.textPrimary)),
+        Text(
+          'Categories',
+          style: AppTypography.label.copyWith(
+            color: AppPalette.current.ink,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
           children: _cats
-              .map((c) => GestureDetector(
-                    onTap: () => setState(() => _cats.remove(c)),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(999)),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(c, style: AppTypography.label.copyWith(color: AppColors.textPrimary)),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.close, size: 14, color: AppColors.textSecondary),
-                        ],
-                      ),
+              .map(
+                (c) => GestureDetector(
+                  onTap: () => setState(() => _cats.remove(c)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
                     ),
-                  ))
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: AppPalette.current.ink, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          c,
+                          style: AppTypography.label.copyWith(
+                            color: AppPalette.current.ink,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Icon(
+                          Icons.close_rounded,
+                          size: 15,
+                          color: AppPalette.current.pink,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
               .toList(),
         ),
       ],
@@ -145,9 +300,16 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppTextField(label: 'Invite link or code', hint: 'Paste your invite link', controller: _code),
+        AppTextField(
+          label: 'Invite link or code',
+          hint: 'Paste your invite link',
+          controller: _code,
+        ),
         const SizedBox(height: AppSpacing.sm),
-        Text('New members need admin approval before they can join.', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+        Text(
+          'New members need admin approval before they can join.',
+          style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+        ),
       ],
     );
   }
