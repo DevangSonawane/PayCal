@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_motion.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 
 class SegmentedControl extends StatelessWidget {
   const SegmentedControl({
@@ -32,7 +32,7 @@ class SegmentedControl extends StatelessWidget {
             child: GestureDetector(
               onTap: () {
                 if (i == selected) return;
-                HapticFeedback.selectionClick();
+                AppHaptics.soft();
                 onSelect(i);
               },
               child: TweenAnimationBuilder<double>(
@@ -48,7 +48,7 @@ class SegmentedControl extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: active ? AppPalette.current.ink : Colors.transparent,
+                    color: active ? AppColors.ink : Colors.transparent,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(

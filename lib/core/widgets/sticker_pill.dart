@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_motion.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 
 /// A pill that behaves like a sticker: when selected it pops slightly and
 /// settles at a tiny hand-applied tilt, with a springy overshoot.
@@ -31,7 +31,9 @@ class StickerPill extends StatelessWidget {
   final Color? selectedFg;
   final Color? unselectedBg;
   final Color? unselectedFg;
-  Color get _selectedBg => selectedBg ?? AppPalette.current.ink;
+  // Ink-filled selections stay dark in both themes so their white label and
+  // lime check never disappear when the adaptive foreground becomes light.
+  Color get _selectedBg => selectedBg ?? AppColors.ink;
   Color get _selectedFg => selectedFg ?? Colors.white;
   Color get _unselectedBg => unselectedBg ?? AppPalette.current.card;
   Color get _unselectedFg => unselectedFg ?? AppPalette.current.ink;
@@ -44,8 +46,7 @@ class StickerPill extends StatelessWidget {
   }
 
   void _handleTap() {
-    HapticFeedback.selectionClick();
-    SystemSound.play(SystemSoundType.click);
+    AppHaptics.soft();
     onTap?.call();
   }
 

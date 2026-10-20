@@ -3,6 +3,7 @@ import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_motion.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 import 'package:paycal/core/widgets/press_scale.dart';
 
 class SecondaryButton extends StatelessWidget {
@@ -24,7 +25,12 @@ class SecondaryButton extends StatelessWidget {
       height: AppSpacing.buttonHeight,
       child: PressScale(
         child: ElevatedButton(
-          onPressed: onPressed,
+          onPressed: onPressed == null
+              ? null
+              : () {
+                  AppHaptics.soft();
+                  onPressed!();
+                },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppPalette.current.surface,
             foregroundColor: AppPalette.current.ink,

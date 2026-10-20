@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 
 const _navItems = [
   (Icons.home_outlined, Icons.home_rounded, 'Home'),
@@ -29,7 +30,11 @@ class SolidBottomNav extends StatelessWidget {
       child: Container(
         height: 68,
         decoration: BoxDecoration(
-          color: AppPalette.current.page,
+          // Keep the original warm page-colour nav in light mode; dark mode
+          // alone uses a raised card surface to avoid blending into the page.
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppPalette.current.card
+              : AppPalette.current.page,
           borderRadius: BorderRadius.circular(32),
           border: Border.all(color: AppPalette.current.ink, width: 2),
           boxShadow: const [
@@ -50,7 +55,13 @@ class SolidBottomNav extends StatelessWidget {
                   selected: currentIndex == i,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => onDestinationSelected(i),
+                    onTap: () {
+                      if (i == currentIndex) return;
+                      // Navigation is a major context change; selectionClick is
+                      // nearly imperceptible on many Android devices.
+                      AppHaptics.medium();
+                      onDestinationSelected(i);
+                    },
                     child: ColoredBox(
                       color: Colors.transparent,
                       child: Column(

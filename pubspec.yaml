@@ -102,6 +102,9 @@ flutter:
           weight: 600
         - asset: assets/fonts/SpaceGrotesk-700.ttf
           weight: 700
+    - family: SedgwickAveDisplay
+      fonts:
+        - asset: assets/fonts/SedgwickAveDisplay-Regular.ttf
 
 
   # To add assets to your application, add an assets section, like this:

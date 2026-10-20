@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_motion.dart';
 import 'package:paycal/core/theme/app_radii.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 import 'package:paycal/core/widgets/quirky_check.dart';
 
 class OptionTile extends StatelessWidget {
@@ -38,8 +38,7 @@ class OptionTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadii.tile),
           onTap: () {
-            HapticFeedback.selectionClick();
-            SystemSound.play(SystemSoundType.click);
+            AppHaptics.soft();
             onTap();
           },
           child: Padding(

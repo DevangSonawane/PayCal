@@ -121,7 +121,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
             ),
             child: Icon(
               Icons.person_add_alt_1,
-              color: AppPalette.current.ink,
+              color: AppColors.ink,
               size: 18,
             ),
           ),
@@ -157,7 +157,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
         vertical: AppSpacing.sm + 2,
       ),
       decoration: BoxDecoration(
-        color: selected ? AppPalette.current.ink : AppPalette.current.chip,
+        color: selected ? AppColors.ink : AppPalette.current.chip,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -176,7 +176,9 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
       vertical: AppSpacing.sm + 2,
     ),
     decoration: BoxDecoration(
-      color: m.id == MockData.meId ? AppPalette.current.lime : Colors.white,
+      color: m.id == MockData.meId
+          ? AppPalette.current.lime
+          : AppPalette.current.card,
       borderRadius: BorderRadius.circular(999),
       border: Border.all(color: AppPalette.current.ink, width: 1.5),
     ),

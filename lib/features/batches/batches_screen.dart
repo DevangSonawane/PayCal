@@ -220,7 +220,7 @@ class _StripePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter o) => false;
+  bool shouldRepaint(CustomPainter o) => true;
 }
 
 class _TopBar extends StatelessWidget {
@@ -238,7 +238,11 @@ class _TopBar extends StatelessWidget {
             color: _BPalette.current.ink,
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.layers_outlined, color: Colors.white, size: 19),
+          child: Icon(
+            Icons.layers_outlined,
+            color: _BPalette.current.page,
+            size: 19,
+          ),
         ),
         SizedBox(width: 8),
         Text(
@@ -427,9 +431,9 @@ class _BatchCard extends StatelessWidget {
                         color: _BPalette.current.ink,
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.groups_2_outlined,
-                        color: Colors.white,
+                        color: _BPalette.current.page,
                         size: 20,
                       ),
                     ),

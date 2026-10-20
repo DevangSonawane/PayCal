@@ -202,7 +202,9 @@ class OnboardingLayout extends StatelessWidget {
                                         child: Text(
                                           sticker!,
                                           style: AppTypography.caption.copyWith(
-                                            color: AppPalette.current.ink,
+                                            color: sticker == 'pick your vibe'
+                                                ? Colors.white
+                                                : AppPalette.current.ink,
                                             fontWeight: FontWeight.w800,
                                           ),
                                         ),

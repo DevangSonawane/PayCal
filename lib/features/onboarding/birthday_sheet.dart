@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 import 'package:paycal/core/widgets/app_bottom_sheet.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 
@@ -98,7 +99,10 @@ Widget _wheel({
       controller: FixedExtentScrollController(
         initialItem: initial.clamp(0, count - 1),
       ),
-      onSelectedItemChanged: onSelect,
+      onSelectedItemChanged: (index) {
+        AppHaptics.soft();
+        onSelect(index);
+      },
       childDelegate: ListWheelChildBuilderDelegate(
         childCount: count,
         builder: (context, i) => Center(

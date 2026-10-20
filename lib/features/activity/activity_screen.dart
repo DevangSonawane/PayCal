@@ -125,7 +125,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   color: _ActivityPalette.current.ink,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.bolt_rounded, color: Colors.white, size: 21),
+                child: Icon(
+                  Icons.bolt_rounded,
+                  color: _ActivityPalette.current.page,
+                  size: 21,
+                ),
               ),
               SizedBox(width: 8),
               Text(
@@ -158,7 +162,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
               children: [
                 Icon(
                   Icons.auto_awesome_rounded,
-                  color: _ActivityPalette.current.ink,
+                  color: AppColors.ink,
                   size: 29,
                 ),
                 const SizedBox(width: 12),
@@ -166,7 +170,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   child: Text(
                     'Everything your groups have been up to.',
                     style: AppTypography.titleSmall.copyWith(
-                      color: _ActivityPalette.current.ink,
+                      color: AppColors.ink,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -267,7 +271,7 @@ class _ActivityRulesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class _ActivityCard extends StatelessWidget {

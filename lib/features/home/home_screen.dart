@@ -10,16 +10,11 @@ import 'package:paycal/core/utils/money.dart';
 import 'package:paycal/core/widgets/avatar.dart';
 import 'package:paycal/core/widgets/solid_bottom_nav.dart';
 import 'package:paycal/core/widgets/app_toast.dart';
-import 'package:paycal/core/widgets/quirky_confirm.dart';
-import 'package:paycal/core/widgets/wedge_loader.dart';
 import 'package:paycal/core/settings/app_settings.dart';
 import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/domain/balance_engine.dart';
 import 'package:paycal/features/expenses/quick_add_sheet.dart';
-import 'package:paycal/features/batches/batch_detail_screen.dart';
-import 'package:paycal/features/batches/batch_edit_sheet.dart';
-import 'package:paycal/features/batches/create_batch_popup.dart';
 import 'package:paycal/features/scans/scan_flow.dart';
 import 'package:paycal/features/search/search_screen.dart';
 
@@ -160,46 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                       SizedBox(height: 18),
-                      _SectionHeader(
-                        onCreate: () async {
-                          final created = await showCreateBatch(context);
-                          if (created == true && mounted) {
-                            setState(() {});
-                            showQuirkyConfirm(
-                              context,
-                              'All set! Batch created',
-                            );
-                          }
-                        },
-                      ),
-                      for (final b in MockData.batches) ...[
-                        _GroupRow(
-                          batch: b,
-                          balance: net(b),
-                          spent: spent(b),
-                          onOpen: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => BatchDetailScreen(batch: b),
-                              ),
-                            );
-                            if (mounted) setState(() {});
-                          },
-                          onCopy: () {
-                            Clipboard.setData(
-                              ClipboardData(text: 'paycal://batch/${b.id}'),
-                            );
-                            showAppToast(context, 'Batch invite link copied');
-                          },
-                          onEdit: () async {
-                            await showBatchEdit(
-                              context,
-                              b,
-                              onDone: () => setState(() {}),
-                            );
-                          },
-                        ),
-                      ],
+                      const _GoodVibesStub(),
                     ],
                   ),
                 ),
@@ -263,7 +219,11 @@ class _TopBar extends StatelessWidget {
           color: _HomePalette.current.ink,
           shape: BoxShape.circle,
         ),
-        child: Icon(Icons.change_history, color: Colors.white, size: 20),
+        child: Icon(
+          Icons.change_history,
+          color: _HomePalette.current.page,
+          size: 20,
+        ),
       ),
       SizedBox(width: 8),
       Text(
@@ -439,7 +399,7 @@ class _HeroCardState extends State<_HeroCard> {
                   Text(
                     widget.amount >= 0 ? 'You are owed:' : 'You owe:',
                     style: TextStyle(
-                      color: _HomePalette.current.ink,
+                      color: AppColors.ink,
                       fontSize: 12,
                     ),
                   ),
@@ -455,7 +415,7 @@ class _HeroCardState extends State<_HeroCard> {
                               ? '••••'
                               : Money.format(widget.amount.abs(), 'INR'),
                           style: AppTypography.title.copyWith(
-                            color: _HomePalette.current.ink,
+                            color: AppColors.ink,
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                           ),
@@ -467,7 +427,7 @@ class _HeroCardState extends State<_HeroCard> {
                             widget.hidden
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
-                            color: _HomePalette.current.ink,
+                            color: AppColors.ink,
                             size: 22,
                           ),
                         ),
@@ -647,8 +607,8 @@ class _HeroPainter extends CustomPainter {
     c.save();
     c.clipRRect(rr);
 
-    // White top, lime bottom
-    c.drawPaint(Paint()..color = Colors.white);
+    // A raised surface in dark mode keeps the hero copy readable.
+    c.drawPaint(Paint()..color = _HomePalette.current.card);
     final split = s.height * .45;
     c.drawRect(
       Rect.fromLTWH(0, split, s.width, s.height - split),
@@ -694,7 +654,7 @@ class _HeroPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter o) => false;
+  bool shouldRepaint(CustomPainter o) => true;
 }
 
 class _QuickPickRow extends StatelessWidget {
@@ -852,164 +812,359 @@ class _Pick extends StatelessWidget {
   );
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.onCreate});
+class _BatchDeck extends StatefulWidget {
+  const _BatchDeck({
+    required this.batches,
+    required this.balanceFor,
+    required this.spentFor,
+    required this.onCreate,
+    required this.onOpen,
+  });
+  final List<Batch> batches;
+  final int Function(Batch) balanceFor;
+  final int Function(Batch) spentFor;
   final VoidCallback onCreate;
+  final ValueChanged<Batch> onOpen;
+
   @override
-  Widget build(BuildContext c) => Row(
-    children: [
-      WedgeBullet(),
-      SizedBox(width: 8),
-      Text(
-        'Your groups',
-        style: AppTypography.title.copyWith(
-          fontWeight: FontWeight.w800,
-          color: _HomePalette.current.ink,
-        ),
-      ),
-      Spacer(),
-      TextButton(
-        onPressed: onCreate,
-        child: Text(
-          '+ Create',
-          style: AppTypography.label.copyWith(
-            color: _HomePalette.current.pink,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    ],
-  );
+  State<_BatchDeck> createState() => _BatchDeckState();
 }
 
-class _GroupRow extends StatelessWidget {
-  const _GroupRow({
+class _BatchDeckState extends State<_BatchDeck> {
+  late final PageController _controller;
+  var _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController(viewportFraction: .88);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.batches.isEmpty) {
+      return _EmptyDeck(onCreate: widget.onCreate);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Your money, in motion',
+              style: AppTypography.title.copyWith(
+                fontWeight: FontWeight.w800,
+                color: _HomePalette.current.ink,
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              onPressed: widget.onCreate,
+              tooltip: 'Create a batch',
+              icon: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.pink,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _HomePalette.current.ink,
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Text(
+          'Swipe through your shared worlds.',
+          style: AppTypography.caption.copyWith(
+            color: _HomePalette.current.grey,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 205,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: widget.batches.length,
+            onPageChanged: (value) => setState(() => _page = value),
+            itemBuilder: (context, index) => AnimatedScale(
+              duration: const Duration(milliseconds: 220),
+              scale: index == _page ? 1 : .94,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: _BatchCard(
+                  batch: widget.batches[index],
+                  balance: widget.balanceFor(widget.batches[index]),
+                  spent: widget.spentFor(widget.batches[index]),
+                  color: index.isEven ? AppColors.purple : AppColors.pink,
+                  onTap: () => widget.onOpen(widget.batches[index]),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (var i = 0; i < widget.batches.length; i++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.only(right: 5),
+                width: i == _page ? 20 : 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: i == _page
+                      ? _HomePalette.current.ink
+                      : _HomePalette.current.hairline,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            const Spacer(),
+            Text(
+              'tap a card to open',
+              style: AppTypography.caption.copyWith(
+                color: _HomePalette.current.grey,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _BatchCard extends StatelessWidget {
+  const _BatchCard({
     required this.batch,
     required this.balance,
     required this.spent,
-    required this.onOpen,
-    required this.onCopy,
-    required this.onEdit,
+    required this.color,
+    required this.onTap,
   });
   final Batch batch;
   final int balance, spent;
-  final VoidCallback onOpen, onCopy, onEdit;
+  final Color color;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext c) => Column(
-    children: [
-      InkWell(
-        onTap: onOpen,
-        onLongPress: onEdit,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 6),
-          child: Row(
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(24),
+    child: Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _HomePalette.current.ink, width: 2),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -15,
+            top: -21,
+            child: _OrbitDot(color: AppColors.lime, size: 72),
+          ),
+          Positioned(
+            right: 31,
+            bottom: -26,
+            child: _OrbitDot(color: Colors.white, size: 54),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 56,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: _HomePalette.current.ink,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: _HomePalette.current.ink,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.group_outlined,
+                      color: Colors.white,
+                      size: 19,
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
                       batch.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.titleSmall.copyWith(
+                        color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        color: _HomePalette.current.ink,
                       ),
                     ),
-                    Text(
-                      '${batch.members.length} members',
-                      style: AppTypography.caption.copyWith(
-                        color: _HomePalette.current.grey,
-                      ),
-                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                balance >= 0 ? 'YOU ARE OWED' : 'YOU OWE',
+                style: AppTypography.caption.copyWith(
+                  color: Colors.white.withValues(alpha: .8),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                Money.format(balance.abs(), batch.currency),
+                style: AppTypography.headline.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${batch.members.length} people · ${Money.format(spent, batch.currency)} tracked',
+                style: AppTypography.caption.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _OrbitDot extends StatelessWidget {
+  const _OrbitDot({required this.color, required this.size});
+  final Color color;
+  final double size;
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: .86, end: 1),
+    duration: const Duration(milliseconds: 900),
+    curve: Curves.elasticOut,
+    builder: (_, scale, child) => Transform.scale(scale: scale, child: child),
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: _HomePalette.current.ink, width: 1.5),
+      ),
+    ),
+  );
+}
+
+class _EmptyDeck extends StatelessWidget {
+  const _EmptyDeck({required this.onCreate});
+  final VoidCallback onCreate;
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onCreate,
+    borderRadius: BorderRadius.circular(24),
+    child: Container(
+      height: 170,
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.lime,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _HomePalette.current.ink, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.auto_awesome_rounded, size: 30),
+          const Spacer(),
+          Text(
+            'Make your first money world',
+            style: AppTypography.titleSmall.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            'A flat, trip, or whatever you share.',
+            style: AppTypography.body.copyWith(
+              color: _HomePalette.current.grey,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// A non-interactive, hand-tag-inspired breather for the lower home area.
+class _GoodVibesStub extends StatelessWidget {
+  const _GoodVibesStub();
+
+  @override
+  Widget build(BuildContext context) {
+    const words = 'all good\nin the hood, bro.';
+    final tagStyle = AppTypography.display.copyWith(
+      fontFamily: 'SedgwickAveDisplay',
+      fontSize: 44,
+      fontWeight: FontWeight.w400,
+      height: .9,
+      letterSpacing: .2,
+    );
+    return SizedBox(
+      height: 150,
+      width: double.infinity,
+      child: Center(
+        child: Transform.rotate(
+          angle: -.045,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: -2,
+                top: -2,
+                child: Text(
+                  words,
+                  textAlign: TextAlign.center,
+                  style: tagStyle.copyWith(color: Colors.white),
+                ),
+              ),
+              Positioned(
+                left: 4,
+                top: 5,
+                child: Text(
+                  words,
+                  textAlign: TextAlign.center,
+                  style: tagStyle.copyWith(color: AppColors.pink),
+                ),
+              ),
+              Text(
+                words,
+                textAlign: TextAlign.center,
+                style: tagStyle.copyWith(
+                  color: _HomePalette.current.ink,
+                  shadows: const [
+                    Shadow(color: Color(0x22000000), offset: Offset(1, 2)),
                   ],
-                ),
-              ),
-              IconButton(
-                onPressed: onCopy,
-                icon: Icon(
-                  Icons.copy_outlined,
-                  size: 20,
-                  color: _HomePalette.current.ink,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 22,
-                color: _HomePalette.current.hairline,
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 6),
-                child: Icon(
-                  Icons.chevron_right,
-                  color: _HomePalette.current.ink,
                 ),
               ),
             ],
           ),
         ),
       ),
-      Padding(
-        padding: EdgeInsets.only(left: 68),
-        child: Column(
-          children: [
-            _amountRow('Your balance', balance),
-            Divider(height: 18, color: _HomePalette.current.hairline),
-            _amountRow('Total spent', spent),
-          ],
-        ),
-      ),
-      SizedBox(height: 14),
-    ],
-  );
-
-  Widget _amountRow(String label, int value) => Row(
-    children: [
-      CircleAvatar(
-        radius: 14,
-        backgroundColor: _HomePalette.current.chip,
-        child: Icon(
-          Icons.currency_rupee,
-          size: 14,
-          color: _HomePalette.current.grey,
-        ),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          label,
-          style: AppTypography.bodyLarge.copyWith(
-            color: _HomePalette.current.grey,
-            fontSize: 14,
-          ),
-        ),
-      ),
-      Text(
-        Money.format(value.abs(), 'INR'),
-        style: AppTypography.label.copyWith(
-          fontWeight: FontWeight.w800,
-          color: _HomePalette.current.ink,
-        ),
-      ),
-    ],
-  );
+    );
+  }
 }
 
 class _FloatingNav extends StatelessWidget {

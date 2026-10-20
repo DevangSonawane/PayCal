@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 
 class QuietTextButton extends StatelessWidget {
   const QuietTextButton({
@@ -15,7 +16,12 @@ class QuietTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: onPressed,
+      onPressed: onPressed == null
+          ? null
+          : () {
+              AppHaptics.soft();
+              onPressed!();
+            },
       style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
       child: Text(
         label,

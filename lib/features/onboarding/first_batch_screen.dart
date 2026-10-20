@@ -10,11 +10,13 @@ import 'package:paycal/core/widgets/app_toast.dart';
 import 'package:paycal/core/widgets/confetti_burst.dart';
 import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
+import 'package:paycal/core/widgets/quiet_text_button.dart';
 import 'package:paycal/core/widgets/segmented_control.dart';
 import 'package:paycal/core/widgets/sticker_pill.dart';
 import 'package:paycal/features/onboarding/invite_screen.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 import 'package:paycal/features/onboarding/onboarding_flow.dart';
+import 'package:paycal/features/shell/main_shell.dart';
 
 const currencies = ['INR', 'USD', 'EUR', 'GBP'];
 
@@ -98,6 +100,14 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
     showConfettiBurst(context);
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => InviteScreen()));
+  }
+
+  void _skip() {
+    widget.draft.clear();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MainShell()),
+      (route) => false,
+    );
   }
 
   @override
@@ -212,6 +222,12 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                   onPressed: _continue,
                 ),
                 SizedBox(height: AppSpacing.sm),
+                Center(
+                  child: QuietTextButton(
+                    label: 'Skip for now',
+                    onPressed: _skip,
+                  ),
+                ),
               ],
             ),
           ),

@@ -7,7 +7,7 @@ import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/text_fx.dart';
 import 'package:paycal/features/auth/sign_in_screen.dart';
-import 'package:paycal/features/onboarding/onboarding_flow.dart';
+import 'package:paycal/features/onboarding/product_tour_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -83,7 +83,9 @@ class WelcomeScreen extends StatelessWidget {
                 PrimaryButton(
                   label: 'Get started',
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const OnboardingFlow()),
+                    MaterialPageRoute(
+                      builder: (_) => const ProductTourScreen(),
+                    ),
                   ),
                 ),
                 SizedBox(height: AppSpacing.sm),

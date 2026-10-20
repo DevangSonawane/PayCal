@@ -14,7 +14,6 @@ class AppSettings extends ChangeNotifier {
   String currencyCode = 'INR';
   bool amountHidden = false;
   bool notificationsOn = true;
-  bool darkMode = false;
   int batchesFilterIndex = 0;
   int batchesSortIndex = 0;
 
@@ -48,11 +47,11 @@ class AppSettings extends ChangeNotifier {
       currencyCode = json['currencyCode'] as String? ?? currencyCode;
       amountHidden = json['amountHidden'] as bool? ?? amountHidden;
       notificationsOn = json['notificationsOn'] as bool? ?? notificationsOn;
-      darkMode = json['darkMode'] as bool? ?? darkMode;
       batchesFilterIndex =
           json['batchesFilterIndex'] as int? ?? batchesFilterIndex;
       batchesSortIndex = json['batchesSortIndex'] as int? ?? batchesSortIndex;
-      AppPalette.current = darkMode ? AppPalette.dark : AppPalette.light;
+      // PayCal intentionally ships a single, carefully tuned light theme.
+      AppPalette.current = AppPalette.light;
     } on FormatException {
       // Keep defaults when the blob is unusable.
     }
@@ -69,7 +68,6 @@ class AppSettings extends ChangeNotifier {
         'currencyCode': currencyCode,
         'amountHidden': amountHidden,
         'notificationsOn': notificationsOn,
-        'darkMode': darkMode,
         'batchesFilterIndex': batchesFilterIndex,
         'batchesSortIndex': batchesSortIndex,
       }),
@@ -82,7 +80,6 @@ class AppSettings extends ChangeNotifier {
     String? currencyCode,
     bool? amountHidden,
     bool? notificationsOn,
-    bool? darkMode,
     int? batchesFilterIndex,
     int? batchesSortIndex,
   }) {
@@ -93,10 +90,6 @@ class AppSettings extends ChangeNotifier {
     if (currencyCode != null) this.currencyCode = currencyCode;
     if (amountHidden != null) this.amountHidden = amountHidden;
     if (notificationsOn != null) this.notificationsOn = notificationsOn;
-    if (darkMode != null) {
-      this.darkMode = darkMode;
-      AppPalette.current = darkMode ? AppPalette.dark : AppPalette.light;
-    }
     if (batchesFilterIndex != null) {
       this.batchesFilterIndex = batchesFilterIndex;
     }

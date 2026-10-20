@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_motion.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
@@ -13,12 +13,14 @@ class PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.loading = false,
     this.enabled = true,
+    this.haptic = AppHapticStrength.medium,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
   final bool enabled;
+  final AppHapticStrength haptic;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,7 @@ class PrimaryButton extends StatelessWidget {
           onPressed: disabled
               ? null
               : () {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.trigger(haptic);
                   onPressed?.call();
                 },
           style: ElevatedButton.styleFrom(

@@ -6,6 +6,7 @@ import 'package:paycal/features/onboarding/invite_screen.dart';
 import 'package:paycal/features/onboarding/first_batch_screen.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 import 'package:paycal/features/onboarding/onboarding_flow.dart';
+import 'package:paycal/features/onboarding/product_tour_screen.dart';
 import 'package:paycal/features/onboarding/welcome_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -63,6 +64,22 @@ void main() {
     expect(find.text('Continue with Google'), findsOneWidget);
   });
 
+  testWidgets('product tour explains the core flow', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const MaterialApp(home: ProductTourScreen()));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Keep every shared expense in one place.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add it once. We split it fairly.'), findsOneWidget);
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+    expect(find.text('How do you identify?'), findsOneWidget);
+  });
+
   testWidgets('first batch + invite render', (tester) async {
     final draft = OnboardingDraft(
       role: 'flat',
@@ -71,6 +88,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: FirstBatchScreen(draft: draft)));
     await tester.pumpAndSettle();
     expect(find.text('Your first batch'), findsOneWidget);
+    expect(find.text('Skip for now'), findsOneWidget);
 
     await tester.pumpWidget(const MaterialApp(home: InviteScreen()));
     await tester.pumpAndSettle();

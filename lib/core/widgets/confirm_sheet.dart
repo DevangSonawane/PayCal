@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/app_haptics.dart';
 import 'package:paycal/core/widgets/app_bottom_sheet.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 
@@ -25,7 +26,13 @@ Future<bool?> showConfirmSheet({
       children: [
         PrimaryButton(
           label: confirmLabel,
-          onPressed: () => Navigator.of(context).pop(true),
+          haptic: destructive
+              ? AppHapticStrength.none
+              : AppHapticStrength.medium,
+          onPressed: () {
+            if (destructive) AppHaptics.harsh();
+            Navigator.of(context).pop(true);
+          },
         ),
         const SizedBox(height: AppSpacing.sm),
         TextButton(

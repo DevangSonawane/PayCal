@@ -14,10 +14,7 @@ class PayCalApp extends StatelessWidget {
         title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: AppSettings.instance.darkMode
-            ? ThemeMode.dark
-            : ThemeMode.light,
+        themeMode: ThemeMode.light,
         home: const SplashScreen(),
         builder: (context, child) => child ?? const SizedBox.shrink(),
       ),

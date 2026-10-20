@@ -46,7 +46,7 @@ class _StripePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter o) => false;
+  bool shouldRepaint(CustomPainter o) => true;
 }
 
 class ProfileScreen extends StatelessWidget {
@@ -149,29 +149,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _appearance(BuildContext context) {
-    return showPopCard<void>(
-      context: context,
-      title: 'Appearance',
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ToggleRow(
-            label: 'Dark mode',
-            support: 'Night-friendly ink and paper',
-            value: AppSettings.instance.darkMode,
-            onChanged: (v) => AppSettings.instance.update(darkMode: v),
-          ),
-        ],
-      ),
-      footer: PrimaryButton(
-        label: 'Done',
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-    );
-  }
-
   Future<void> _notifications(BuildContext context) {
     return showPopCard<void>(
       context: context,
@@ -252,7 +229,9 @@ class ProfileScreen extends StatelessWidget {
               margin: EdgeInsets.only(bottom: AppSpacing.sm),
               padding: EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: net == 0 ? AppPalette.current.lime : Colors.white,
+                color: net == 0
+                    ? AppPalette.current.lime
+                    : AppPalette.current.card,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppPalette.current.ink, width: 1.5),
               ),
@@ -262,7 +241,9 @@ class ProfileScreen extends StatelessWidget {
                     child: Text(
                       b.name,
                       style: AppTypography.label.copyWith(
-                        color: AppPalette.current.ink,
+                        color: net == 0
+                            ? AppColors.ink
+                            : AppPalette.current.ink,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -271,7 +252,7 @@ class ProfileScreen extends StatelessWidget {
                     Text(
                       'Square',
                       style: AppTypography.caption.copyWith(
-                        color: AppPalette.current.ink,
+                        color: AppColors.ink,
                         fontWeight: FontWeight.w800,
                       ),
                     )
@@ -280,7 +261,9 @@ class ProfileScreen extends StatelessWidget {
                       amount: net.abs(),
                       currency: currency,
                       style: AppTypography.titleSmall.copyWith(
-                        color: AppPalette.current.ink,
+                        color: net == 0
+                            ? AppColors.ink
+                            : AppPalette.current.ink,
                         fontWeight: FontWeight.w800,
                       ),
                       direction: net > 0
@@ -420,7 +403,7 @@ class ProfileScreen extends StatelessWidget {
                       padding: EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: PartyMode.instance.identityCard,
-                        border: Border.all(color: Color(0xFF0A0A0A), width: 2),
+                        border: Border.all(color: AppColors.ink, width: 2),
                         borderRadius: BorderRadius.circular(28),
                       ),
                       child: Row(
@@ -495,7 +478,7 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.account_balance_wallet_outlined,
-                          color: AppPalette.current.ink,
+                          color: AppColors.ink,
                           size: 22,
                         ),
                         SizedBox(width: AppSpacing.md),
@@ -503,15 +486,12 @@ class ProfileScreen extends StatelessWidget {
                           child: Text(
                             'Balance across batches',
                             style: AppTypography.label.copyWith(
-                              color: AppPalette.current.ink,
+                              color: AppColors.ink,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
-                        Icon(
-                          Icons.chevron_right,
-                          color: AppPalette.current.ink,
-                        ),
+                        Icon(Icons.chevron_right, color: AppColors.ink),
                       ],
                     ),
                   ),
@@ -519,7 +499,6 @@ class ProfileScreen extends StatelessWidget {
                 SizedBox(height: AppSpacing.xxl),
                 _group(context, 'Account', [
                   ('Account details', () => _accountDetails(context)),
-                  ('Appearance', () => _appearance(context)),
                   ('Notifications', () => _notifications(context)),
                   ('Privacy', () => _privacy(context)),
                 ]),
@@ -628,7 +607,7 @@ class ProfileScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppPalette.current.card,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Color(0xFF0A0A0A), width: 1.5),
+                border: Border.all(color: AppPalette.current.ink, width: 1.5),
               ),
               child: Row(
                 children: [

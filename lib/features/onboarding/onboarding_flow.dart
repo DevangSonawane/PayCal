@@ -259,7 +259,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               decoration: BoxDecoration(
                 color: AppPalette.current.card,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.ink, width: 1.5),
+                border: Border.all(color: AppPalette.current.ink, width: 1.5),
               ),
               child: Row(
                 children: [
@@ -271,7 +271,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                       style: AppTypography.titleSmall.copyWith(
                         color: b == null
                             ? AppPalette.current.grey
-                            : AppColors.ink,
+                            : AppPalette.current.ink,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -282,7 +282,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                     decoration: BoxDecoration(
                       color: AppColors.purple,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.ink, width: 1.5),
+                      border: Border.all(
+                        color: AppPalette.current.ink,
+                        width: 1.5,
+                      ),
                     ),
                     child: const Icon(
                       Icons.cake_outlined,
@@ -461,7 +464,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                         '$count',
                         key: ValueKey(count),
                         style: AppTypography.displayAmount.copyWith(
-                          color: AppColors.ink,
+                          color: AppPalette.current.ink,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -515,7 +518,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                                 color: accents[i % accents.length],
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.ink,
+                                  color: AppPalette.current.ink,
                                   width: 2,
                                 ),
                               ),

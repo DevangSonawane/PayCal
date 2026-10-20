@@ -220,7 +220,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                       child: Text(
                         'Admin',
                         style: AppTypography.caption.copyWith(
-                          color: _DPalette.current.ink,
+                          color: AppColors.ink,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -802,7 +802,7 @@ class _Header extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: _DPalette.current.ink, width: 1.5),
           ),
-          color: Colors.white,
+          color: AppPalette.current.card,
           onSelected: (action) {
             if (action == _BatchMenuAction.groupDetails) {
               onDetails();
@@ -813,11 +813,21 @@ class _Header extends StatelessWidget {
           itemBuilder: (context) => [
             PopupMenuItem(
               value: _BatchMenuAction.groupDetails,
-              child: Text('View group details'),
+              child: Text(
+                'View group details',
+                style: AppTypography.body.copyWith(
+                  color: _DPalette.current.ink,
+                ),
+              ),
             ),
             PopupMenuItem(
               value: _BatchMenuAction.settleUp,
-              child: Text('Settle up'),
+              child: Text(
+                'Settle up',
+                style: AppTypography.body.copyWith(
+                  color: _DPalette.current.ink,
+                ),
+              ),
             ),
           ],
           child: Container(
@@ -851,9 +861,6 @@ class _HeroCard extends StatelessWidget {
     builder: (context, b) {
       final w = b.maxWidth;
       final h = (w * .50).clamp(165.0, 200.0);
-      final direction = net > 0
-          ? MoneyDirection.owed
-          : (net < 0 ? MoneyDirection.owe : null);
       final caption = net > 0
           ? 'You are owed:'
           : (net < 0 ? 'You owe:' : 'All settled:');
@@ -906,10 +913,7 @@ class _HeroCard extends StatelessWidget {
                       children: [
                         Text(
                           caption,
-                          style: TextStyle(
-                            color: _DPalette.current.ink,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: AppColors.ink, fontSize: 12),
                         ),
                         const SizedBox(height: 2),
                         FittedBox(
@@ -919,11 +923,10 @@ class _HeroCard extends StatelessWidget {
                             amount: net.abs(),
                             currency: batch.currency,
                             style: AppTypography.displayAmount.copyWith(
-                              color: _DPalette.current.ink,
+                              color: AppColors.ink,
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
                             ),
-                            direction: direction,
                           ),
                         ),
                       ],
@@ -962,7 +965,7 @@ class _HeroPainter extends CustomPainter {
     final rr = RRect.fromRectAndRadius(Offset.zero & s, Radius.circular(28));
     c.save();
     c.clipRRect(rr);
-    c.drawPaint(Paint()..color = Colors.white);
+    c.drawPaint(Paint()..color = _DPalette.current.card);
     final split = s.height * .45;
     c.drawRect(
       Rect.fromLTWH(0, split, s.width, s.height - split),
@@ -1000,7 +1003,7 @@ class _HeroPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter o) => false;
+  bool shouldRepaint(CustomPainter o) => true;
 }
 
 class _OverlapCircles extends StatelessWidget {
@@ -1179,7 +1182,7 @@ class _ActionOption extends StatelessWidget {
                 color: _DPalette.current.ink,
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: Icon(icon, color: Colors.white, size: 20),
+              child: Icon(icon, color: _DPalette.current.page, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1332,6 +1335,7 @@ class _PaymentBubble extends StatelessWidget {
       (member) => member.id == expense.payerId,
     );
     final myShare = expense.shares[MockData.meId] ?? 0;
+    final foreground = isMine ? AppColors.ink : _DPalette.current.ink;
 
     final bubble = GestureDetector(
       onTap: () => Navigator.of(context).push(
@@ -1346,7 +1350,7 @@ class _PaymentBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 240),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isMine ? _DPalette.current.lime : Colors.white,
+          color: isMine ? _DPalette.current.lime : _DPalette.current.card,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(22),
             topRight: const Radius.circular(22),
@@ -1366,7 +1370,7 @@ class _PaymentBubble extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.label.copyWith(
-                      color: _DPalette.current.ink,
+                      color: foreground,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1375,7 +1379,7 @@ class _PaymentBubble extends StatelessWidget {
                 Text(
                   Money.format(expense.totalMinor, expense.currency),
                   style: AppTypography.label.copyWith(
-                    color: _DPalette.current.ink,
+                    color: foreground,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1385,13 +1389,13 @@ class _PaymentBubble extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: isMine ? Colors.white : _DPalette.current.chip,
+                color: isMine ? _DPalette.current.card : _DPalette.current.chip,
                 borderRadius: BorderRadius.circular(99),
               ),
               child: Text(
                 'My share ${Money.format(myShare, expense.currency)}',
                 style: AppTypography.caption.copyWith(
-                  color: _DPalette.current.ink,
+                  color: isMine ? _DPalette.current.ink : foreground,
                   fontSize: 11,
                 ),
               ),
