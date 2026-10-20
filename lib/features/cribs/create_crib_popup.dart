@@ -6,31 +6,35 @@ import 'package:paycal/core/widgets/app_text_field.dart';
 import 'package:paycal/core/widgets/app_toast.dart';
 import 'package:paycal/core/widgets/pop_card.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
-import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
 
-/// Opens the themed "Create batch" pop-up. Returns true if a batch was
+/// Opens the themed "Create crib" pop-up. Returns true if a crib was
 /// created so the caller can refresh its list.
-Future<bool> showCreateBatch(BuildContext context) async {
+Future<bool> showCreateCrib(BuildContext context) async {
   final created = await showPopCard<bool>(
     context: context,
-    title: 'Create batch',
-    builder: (dialogContext) => _CreateBatchForm(),
+    title: 'Create crib',
+    builder: (dialogContext) => _CreateCribForm(),
   );
   return created ?? false;
 }
 
-class _CreateBatchForm extends StatefulWidget {
-  const _CreateBatchForm();
+class _CreateCribForm extends StatefulWidget {
+  const _CreateCribForm();
 
   @override
-  State<_CreateBatchForm> createState() => _CreateBatchFormState();
+  State<_CreateCribForm> createState() => _CreateCribFormState();
 }
 
-class _CreateBatchFormState extends State<_CreateBatchForm> {
+class _CreateCribFormState extends State<_CreateCribForm> {
   final name = TextEditingController();
   final member = TextEditingController();
-  final members = <Member>[MockData.me];
+
+  /// The creator is added by the repository as the owner, so only the extra
+  /// members are collected here.
+  final members = <Member>[];
   var currency = 'INR';
   static const _currencies = ['INR', 'USD', 'EUR'];
 
@@ -49,20 +53,26 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
     });
   }
 
-  void _create() {
+  Future<void> _create() async {
     if (name.text.trim().isEmpty) {
-      showAppToast(context, 'The batch needs a name first');
+      showAppToast(context, 'The crib needs a name first');
       return;
     }
-    MockData.batches.add(
-      Batch(
-        id: 'b${DateTime.now().millisecondsSinceEpoch}',
-        name: name.text.trim(),
-        currency: currency,
-        members: List.of(members),
-        categories: ['food', 'transport', 'rent', 'groceries', 'other'],
-      ),
-    );
+    try {
+      await PayCalRepositories.instance.cribs.create(
+        Crib(
+          id: 'b${DateTime.now().millisecondsSinceEpoch}',
+          name: name.text.trim(),
+          currency: currency,
+          members: List.of(members),
+          categories: ['food', 'transport', 'rent', 'groceries', 'other'],
+        ),
+      );
+    } on RepositoryException catch (error) {
+      if (mounted) showAppToast(context, error.message);
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pop(true);
   }
 
@@ -72,7 +82,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       AppTextField(
-        label: 'Batch name',
+        label: 'Crib name',
         hint: 'Our flat, Goa trip…',
         controller: name,
       ),
@@ -97,7 +107,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
         runSpacing: AppSpacing.sm,
         children: [
           for (final m in members)
-            _memberChip(m, removable: m.id != MockData.meId),
+            _memberChip(m, removable: true),
         ],
       ),
       SizedBox(height: AppSpacing.md),
@@ -119,16 +129,12 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
               shape: BoxShape.circle,
               border: Border.all(color: AppPalette.current.ink, width: 1.5),
             ),
-            child: Icon(
-              Icons.person_add_alt_1,
-              color: AppColors.ink,
-              size: 18,
-            ),
+            child: Icon(Icons.person_add_alt_1, color: AppColors.ink, size: 18),
           ),
         ),
       ),
       SizedBox(height: AppSpacing.lg),
-      PrimaryButton(label: 'Create batch', onPressed: _create),
+      PrimaryButton(label: 'Create crib', onPressed: _create),
     ],
   );
 
@@ -176,9 +182,7 @@ class _CreateBatchFormState extends State<_CreateBatchForm> {
       vertical: AppSpacing.sm + 2,
     ),
     decoration: BoxDecoration(
-      color: m.id == MockData.meId
-          ? AppPalette.current.lime
-          : AppPalette.current.card,
+      color: AppPalette.current.card,
       borderRadius: BorderRadius.circular(999),
       border: Border.all(color: AppPalette.current.ink, width: 1.5),
     ),

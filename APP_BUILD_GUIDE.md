@@ -49,19 +49,19 @@ Capture patterns, not pixels. Do not copy another app's exact layout, brand, or 
 
 ```
 Splash
-└─ Welcome ── Get started ──► Onboarding (Gender → Birthday → Role → Role details) ──► Create account ──► Verify email ──► Notifications priming ──► First batch (create or join) ──► Invite members ──► Home
+└─ Welcome ── Get started ──► Onboarding (Gender → Birthday → Role → Role details) ──► Create account ──► Verify email ──► Notifications priming ──► First crib (create or join) ──► Invite members ──► Home
           └─ Sign in (returning users) ──► Home
 Main shell (floating glass bottom nav)
-├─ Home            (PRD §12: net position per currency, batches, recent activity, upcoming, pending)
-├─ Batches         (list; open a batch)
+├─ Home            (PRD §12: net position per currency, cribs, recent activity, upcoming, pending)
+├─ Cribs         (list; open a crib)
 ├─ [ + ] Quick Add (opens bottom sheet; PRD §4.1)
-├─ Activity        (PRD §13 feed across batches)
+├─ Activity        (PRD §13 feed across cribs)
 └─ Profile         (account, notifications, privacy, delete account)
-Batch detail
+Crib detail
 ├─ Expenses | Balances | Members | Reports   (segmented control)
 ├─ Expense detail (+ flag dispute, edit, history)
 ├─ Settle up sheet (full amount only; two methods)
-└─ Batch settings (currency, categories, recurring, admin tools)
+└─ Crib settings (currency, categories, recurring, admin tools)
 ```
 
 Navigation rules: bottom nav only on the 4 top-level tabs. Everything deeper uses push with a back button. Modals (add expense, pickers, confirmations) are bottom sheets, not centre dialogs.
@@ -119,7 +119,7 @@ Only four weights are allowed: **400 Regular, 500 Medium, 600 SemiBold, 700 Bold
 
 | Style | Size / line height | Weight | Letter spacing | Use |
 |---|---|---|---|---|
-| `displayAmount` | 44 / 52 | 700 | -1.0 | Hero balance on Home / Batch |
+| `displayAmount` | 44 / 52 | 700 | -1.0 | Hero balance on Home / Crib |
 | `display` | 32 / 40 | 700 | -0.6 | Welcome title |
 | `headline` | 28 / 34 | 700 | -0.4 | Onboarding question, screen titles |
 | `title` | 20 / 26 | 600 | -0.2 | Section titles, sheet titles |
@@ -273,19 +273,19 @@ Copy conventions: sentence case, no exclamation marks except celebratory success
 
 ## 6. Onboarding flow (the most important part)
 
-**Goal:** a new user reaches their first batch in under 90 seconds, feels it was effortless, and the app knows enough to personalise their first batch. Principles: one question per screen, big tappable answers, always a way back, always a way to skip anything that is not required, never ask for what Google can provide.
+**Goal:** a new user reaches their first crib in under 90 seconds, feels it was effortless, and the app knows enough to personalise their first crib. Principles: one question per screen, big tappable answers, always a way back, always a way to skip anything that is not required, never ask for what Google can provide.
 
 ### 6.1 Flow overview
 
 ```
 S0 Splash → S1 Welcome
-  ├─ [Get started] → S2 Gender → S3 Birthday → S4 Role → S5 Role details (2 mini-steps) → S6 Create account → S7 Verify email → S8 Notifications priming → S9 First batch → S10 Invite members → Home
+  ├─ [Get started] → S2 Gender → S3 Birthday → S4 Role → S5 Role details (2 mini-steps) → S6 Create account → S7 Verify email → S8 Notifications priming → S9 First crib → S10 Invite members → Home
   └─ [Sign in] (below the button) → Sign-in screen → Home (or resume onboarding if the profile is incomplete)
 ```
 
 Persist the in-progress answers locally (`OnboardingDraft`) so a killed app resumes at the same step. Create the account **after** the questions, because answering feels like progress and the account step feels like the finish line. Attach the saved answers to the new profile on account creation.
 
-> **Assumption to confirm:** the message that defined this flow ended at "…then your role and then accordingly". I interpreted "accordingly" as role-based personalisation of the first batch (S5, S9). If you meant something else, change S5/S9 only; the rest of the flow stands.
+> **Assumption to confirm:** the message that defined this flow ended at "…then your role and then accordingly". I interpreted "accordingly" as role-based personalisation of the first crib (S5, S9). If you meant something else, change S5/S9 only; the rest of the flow stands.
 
 ### 6.2 Shared onboarding layout (S2–S5)
 
@@ -323,7 +323,7 @@ Persist the in-progress answers locally (`OnboardingDraft`) so a killed app resu
 - Validation: show the age-gate message if under the minimum age (see below); never allow a future date.
 - Required (cannot skip), because of the age gate.
 - Minimum age: define `kMinimumAge` in one config file, **default 18, pending legal confirmation.** Indian data-protection rules treat under-18s as children and require parental consent mechanisms, so launching to teenagers needs a legal decision. Under-age copy: "You need to be at least {age} to use {{APP_NAME}}." with a single "Okay" action that returns to Welcome and clears the draft.
-- Privacy: store the date of birth server-side only; never expose it to other batch members (PRD §15). Consider storing only the birth year after verification if the product does not need the full date.
+- Privacy: store the date of birth server-side only; never expose it to other crib members (PRD §15). Consider storing only the birth year after verification if the product does not need the full date.
 
 **S4 Role**
 - Question: "What brings you here?" Support: "Pick the one that fits best. You can add more groups later."
@@ -335,13 +335,13 @@ Persist the in-progress answers locally (`OnboardingDraft`) so a killed app resu
 | Sharing a flat | Roommates and monthly bills | Categories: rent, groceries, electricity, internet, cleaning, other; offer a monthly rent recurring expense; default 3 |
 | Couple | Everyday life together | Categories: groceries, dining, rent, travel, subscriptions, other; default 2 |
 | Family | Home and household costs | Categories: groceries, utilities, school, health, travel, other; default 4 |
-| Trip planner | Holidays with friends | Categories: stay, transport, food, activities, other; one-off batch (no recurring); default 4 |
+| Trip planner | Holidays with friends | Categories: stay, transport, food, activities, other; one-off crib (no recurring); default 4 |
 | Team or office | Lunches, gifts, events | Categories: food, gifts, events, supplies, other; default 5 |
 
 - There is no "Other" option and **no default selection**. Continue stays disabled until the user picks one.
 
 **S5 Role details (2 mini-steps, same layout)**
-- 5a: "What will you split?" Multi-select chips (4–6 per role, from the role's categories above; at least one required). These become the first batch's active categories (PRD §8).
+- 5a: "What will you split?" Multi-select chips (4–6 per role, from the role's categories above; at least one required). These become the first crib's active categories (PRD §8).
 - 5b: "How many people, including you?" A stepper (− / number / +, range 2–20) with `displayAmount`-sized number. Default from the role table. Used only to suggest the invite step and equal-split defaults, not to restrict anything.
 
 **S6 Create account**
@@ -353,7 +353,7 @@ Persist the in-progress answers locally (`OnboardingDraft`) so a killed app resu
 - On success: write the profile (`gender`, `birthDate`, `role`, `splitTypes`, `householdSize`), clear the draft.
 - Legal line repeated as `caption`.
 
-**S7 Verify email** (PRD §2.1: verification before creating or joining a batch)
+**S7 Verify email** (PRD §2.1: verification before creating or joining a crib)
 - Skipped for Google sign-ins (already verified).
 - Title "Check your inbox", support text showing the address, a primary "Open email app" button, "Resend" with a 30 s cooldown shown as a countdown, and "Use a different email". Poll or deep-link to detect verification; on success, a short check animation then continue.
 
@@ -361,11 +361,11 @@ Persist the in-progress answers locally (`OnboardingDraft`) so a killed app resu
 - Before the system prompt, show an `AppBottomSheet`: title "Never miss a split", three short lines (new expenses, payment requests, reminders), buttons "Turn on notifications" (triggers the Android 13+ system permission) and "Not now".
 - If denied, the app still works; show a quiet banner in Profile with a "Turn on" action later. Never re-prompt repeatedly.
 
-**S9 First batch** (PRD §3)
-- Segmented choice at the top: **Create a batch** | **Join with a link**.
-- Create: batch name (pre-filled from role: "Our flat", "Goa trip", "Home", "Office lunch"…), **currency** (sheet with search; default from device locale, e.g. INR; helper text: "Everyone in this batch uses this currency. You can change it later; amounts won't be converted." per PRD §3.2), and the pre-selected categories from S5a shown as removable chips. If the role is "Sharing a flat", show an optional card "Add monthly rent" that opens the recurring sheet (PRD §5).
+**S9 First crib** (PRD §3)
+- Segmented choice at the top: **Create a crib** | **Join with a link**.
+- Create: crib name (pre-filled from role: "Our flat", "Goa trip", "Home", "Office lunch"…), **currency** (sheet with search; default from device locale, e.g. INR; helper text: "Everyone in this crib uses this currency. You can change it later; amounts won't be converted." per PRD §3.2), and the pre-selected categories from S5a shown as removable chips. If the role is "Sharing a flat", show an optional card "Add monthly rent" that opens the recurring sheet (PRD §5).
 - Join: paste an invite link or enter a code; on success show "Request sent. The admin will approve you." (PRD §3.4: admin approval is required).
-- `PrimaryButton` "Create batch" / "Request to join".
+- `PrimaryButton` "Create crib" / "Request to join".
 
 **S10 Invite members**
 - Title "Add your people". Primary: "Share invite link" (opens the system share sheet via `share_plus`) with a `SecondaryButton` "Invite by email or username". Show the invite link in a copyable pill. Explain in one line: "New members need your approval before they can join."
@@ -397,7 +397,7 @@ Persist the in-progress answers locally (`OnboardingDraft`) so a killed app resu
 | createAccountTitle | Create your account |
 | verifyTitle | Check your inbox |
 | notifTitle | Never miss a split |
-| firstBatchTitle | Set up your first batch |
+| firstCribTitle | Set up your first crib |
 | inviteTitle | Add your people |
 | allSet | You're all set |
 
@@ -409,26 +409,26 @@ Persist the in-progress answers locally (`OnboardingDraft`) so a killed app resu
 - Top: greeting `titleSmall` "Hi, {firstName}" and the avatar button (opens Profile). No emoji.
 - **Hero balance:** one card per currency the user has activity in. `displayAmount` for the net amount, `body` label "You're owed" (`owed`) or "You owe" (`owe`) or "All settled" (`textSecondary`). Never sum across currencies (PRD §3.2). Beneath, two `StatusChip`-like stat pills: "Owed to you ₹X" and "You owe ₹X".
 - **Needs attention:** pending settlements, unpaid expenses (rows with chips). Hidden when empty.
-- **Your batches:** horizontally stacked cards or a list: name, avatar stack, your net in this batch, tap to open.
+- **Your cribs:** horizontally stacked cards or a list: name, avatar stack, your net in this crib, tap to open.
 - **Upcoming:** next recurring expenses with date and amount.
 - **Recent activity:** last 5 events with "See all".
-- **Empty state (new user):** a single card: "Add your first expense" + "Add expense" button; if the batch has no members yet, "Invite your people" instead. No illustration.
+- **Empty state (new user):** a single card: "Add your first expense" + "Add expense" button; if the crib has no members yet, "Invite your people" instead. No illustration.
 - Pull to refresh; skeletons during first load.
 
 ### 7.2 Quick Add sheet (PRD §4.1) — the app's signature interaction
 Opened by the centre "+" button. A tall `AppBottomSheet` (about 85% height), glass 86% fill.
-1. `AmountField` first, auto-focused, with a currency symbol of the active batch.
+1. `AmountField` first, auto-focused, with a currency symbol of the active crib.
 2. Description field ("What was it for?").
-3. A row of tappable chips: **Batch** (if more than one), **Paid by You**, **Split equally · 4 people**, **Today**, **Category**. Each chip opens a small selection sheet.
+3. A row of tappable chips: **Crib** (if more than one), **Paid by You**, **Split equally · 4 people**, **Today**, **Category**. Each chip opens a small selection sheet.
 4. Live preview line under the chips: "₹250 each" (equal) or per-person shares for custom/percentage (PRD §4.2: show each share before saving).
 5. "More details" expands the Full Expense Form fields inline (notes, recurring, custom split, date).
 6. Pinned `PrimaryButton` "Add expense". On save: sheet closes, toast "Expense added", balances update.
 - Validation messages explain how to fix ("Percentages add up to 90%. Add 10% more.").
-- Remember the last batch, payer and split method as defaults.
+- Remember the last crib, payer and split method as defaults.
 
-### 7.3 Batch detail
-- Header: batch name `headline`, currency chip, avatar stack, overflow menu (settings).
-- Hero: your net in this batch, plus "Settle up" `PrimaryButton` when a balance exists.
+### 7.3 Crib detail
+- Header: crib name `headline`, currency chip, avatar stack, overflow menu (settings).
+- Hero: your net in this crib, plus "Settle up" `PrimaryButton` when a balance exists.
 - `SegmentedControl`: **Expenses** | **Balances** | **Members** | **Reports**.
 - Expenses: grouped by date headers (`caption`), `ListRow`s with category tint icon, description, "Paid by Asha", amount on the right, `StatusChip` if unpaid/disputed. Filters (date, category, payer, participant, status; PRD §9.2) in a filter sheet opened from a funnel icon, with an active-filter count badge.
 - Balances: each member row with paid, share, net (PRD §6.2).
@@ -448,7 +448,7 @@ Opened by the centre "+" button. A tall `AppBottomSheet` (about 85% height), gla
 - Edge case (balance changed after recording): show a `pending` banner on the settlement with "Balance changed. Review". (Behaviour pending PRD open decision.)
 
 ### 7.6 Profile and settings
-- Grouped list rows: Account, Notifications, Batches (leave, admin recovery), Privacy, Help, Delete account.
+- Grouped list rows: Account, Notifications, Cribs (leave, admin recovery), Privacy, Help, Delete account.
 - Delete account: `ConfirmSheet` that explains anonymisation (PRD §14), lists outstanding balances as a warning, and requires typing the word DELETE (or re-auth).
 
 ---
@@ -493,7 +493,7 @@ lib/
   features/
     onboarding/         # welcome, gender, birthday, role, details, controllers, draft storage
     auth/               # sign-in, create account, verify email, password reset
-    batches/
+    cribs/
     expenses/
     settlements/
     recurring/
@@ -538,8 +538,8 @@ Work in this order. Give the agent **one prompt at a time**, review on an emulat
 **M2 — Welcome and onboarding UI (mock data)**
 > Implement S0–S5 from section 6 with the shared layout, progress bar, shared-axis transitions, haptics, the role table and the copy deck (ARB). Persist `OnboardingDraft` with `shared_preferences` so killing the app resumes. Add the age gate with `kMinimumAge`. Use no backend yet. Add widget tests for each step and one integration test for the happy path.
 
-**M3 — Account, verification, permissions, first batch**
-> Implement S6–S10 and the Sign-in screen against an `AuthRepository` and `BatchRepository` interface with in-memory mock implementations. Include the notification priming sheet, currency picker sheet with search, invite sharing via `share_plus`, join-with-link flow, and all error and loading states from section 9.
+**M3 — Account, verification, permissions, first crib**
+> Implement S6–S10 and the Sign-in screen against an `AuthRepository` and `CribRepository` interface with in-memory mock implementations. Include the notification priming sheet, currency picker sheet with search, invite sharing via `share_plus`, join-with-link flow, and all error and loading states from section 9.
 
 **M4 — App shell and Home**
 > Implement the floating glass bottom nav with the centre add button, the router with auth/onboarding guards, and the Home screen from 7.1 using mock data, including the new-user empty state and coach marks.
@@ -547,8 +547,8 @@ Work in this order. Give the agent **one prompt at a time**, review on an emulat
 **M5 — Quick Add and expense flows**
 > Implement the Quick Add sheet (7.2) and the Full Expense Form, backed by the pure-Dart calculation engine in `domain/` with tests for equal, custom amount and percentage splits, validation, and rounding (leftover minor unit rule is an open PRD decision: make it a single swappable function and use "assign the remainder to the payer" as a temporary default, clearly marked TODO).
 
-**M6 — Batches, balances, settle up**
-> Implement Batch detail (7.3), Expense detail (7.4), the Settle up sheet (7.5, full amount only, both methods, correct labels and chips) and the dispute flow (PRD §10), all reading balances from the engine.
+**M6 — Cribs, balances, settle up**
+> Implement Crib detail (7.3), Expense detail (7.4), the Settle up sheet (7.5, full amount only, both methods, correct labels and chips) and the dispute flow (PRD §10), all reading balances from the engine.
 
 **M7 — Recurring, reports, activity, profile**
 > Implement recurring expense configuration with custom intervals (every N days, weeks, months), the Activity feed, Reports (date and category summaries), Profile and account deletion with anonymisation messaging.

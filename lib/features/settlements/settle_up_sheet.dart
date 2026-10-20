@@ -4,68 +4,48 @@ import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/utils/money.dart';
 import 'package:paycal/core/widgets/pop_card.dart';
+import 'package:paycal/core/widgets/app_toast.dart';
 import 'package:paycal/core/widgets/quirky_confirm.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/member_directory.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/data/repositories.dart';
+import 'package:paycal/domain/financial_ledger.dart';
 
 /// Who owes whom, resolved greedily into the fewest person-to-person
-/// transfers, so the batch can be marked fully square.
-class SettlementTransfer {
-  SettlementTransfer({
-    required this.fromId,
-    required this.toId,
-    required this.amountMinor,
-  });
-  final String fromId;
-  final String toId;
-  final int amountMinor;
+/// transfers, so the crib can be marked fully square.
+List<SettlementTransfer> transfersForCrib(Crib crib) {
+  return FinancialLedger.suggestedTransfers(
+    crib: crib,
+    expenses: PayCalRepositories.instance.expenses.cachedExpenses.where(
+      (expense) => expense.cribId == crib.id,
+    ),
+    settlements: PayCalRepositories.instance.settlements.cachedSettlements
+        .where((settlement) => settlement.cribId == crib.id),
+  );
 }
 
-List<SettlementTransfer> transfersForBatch(Batch batch) {
-  final balances = <String, int>{for (final m in batch.members) m.id: 0};
-  final batchExpenses = MockData.expenses.where((e) => e.batchId == batch.id);
-  for (final e in batchExpenses) {
-    final paid = balances[e.payerId] ?? 0;
-    balances[e.payerId] = paid + e.totalMinor;
-    e.shares.forEach((mid, share) {
-      if (balances.containsKey(mid)) {
-        balances[mid] = (balances[mid] ?? 0) - share;
-      }
-    });
-  }
-  // Greedy: smallest debtor pairs against the largest creditor each round.
-  final debtors = <int, String>{}; // -balance -> id
-  final creditors = <int, String>{}; // balance -> id
-  balances.forEach((id, net) {
-    if (net < 0) debtors[-net] = id;
-    if (net > 0) creditors[net] = id;
-  });
-  final transfers = <SettlementTransfer>[];
-  var guard = 0;
-  while (debtors.isNotEmpty && creditors.isNotEmpty && guard++ < 200) {
-    final debtorKey = debtors.keys.reduce((a, b) => a > b ? a : b);
-    final debtor = debtors.remove(debtorKey)!;
-    final creditorKey = creditors.keys.reduce((a, b) => a > b ? a : b);
-    final creditor = creditors.remove(creditorKey)!;
-    final amount = debtorKey < creditorKey ? debtorKey : creditorKey;
-    transfers.add(
-      SettlementTransfer(fromId: debtor, toId: creditor, amountMinor: amount),
-    );
-    if (debtorKey - amount > 0) debtors[debtorKey - amount] = debtor;
-    if (creditorKey - amount > 0) creditors[creditorKey - amount] = creditor;
-  }
-  return transfers;
-}
-
-/// Batch-wide settle-up: shows the minimum transfers and, on confirm, records
-/// each as an expense (payer = person transferring, full share to recipient).
+/// Crib-wide settle-up records self-managed settlement records. It does not
+/// create fake expenses, so spending totals stay accurate.
+///
+/// Only the signed-in member can record their own transfer. Somebody else's
+/// transfer stays a request until that member records it.
 Future<void> showSettleUp(
   BuildContext context,
-  Batch batch, {
+  Crib crib, {
   VoidCallback? onRecorded,
 }) {
-  final transfers = transfersForBatch(batch);
+  final transfers = transfersForCrib(crib);
+  final meId = PayCalRepositories.instance.currentUserId;
+  final mine = [
+    for (final t in transfers)
+      if (t.fromId == meId) t,
+  ];
+  final theirs = [
+    for (final t in transfers)
+      if (t.fromId != meId) t,
+  ];
   return showPopCard<void>(
     context: context,
     title: 'Settle up',
@@ -97,7 +77,7 @@ Future<void> showSettleUp(
                   ),
                 ),
                 Text(
-                  'Nothing to settle in ${batch.name}.',
+                  'Nothing to settle in ${crib.name}.',
                   style: AppTypography.caption.copyWith(
                     color: AppPalette.current.grey,
                   ),
@@ -110,7 +90,7 @@ Future<void> showSettleUp(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'The fewest moves to make ${batch.name} square:',
+                'The fewest moves to make ${crib.name} square:',
                 style: AppTypography.caption.copyWith(
                   color: AppPalette.current.grey,
                 ),
@@ -136,7 +116,7 @@ Future<void> showSettleUp(
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${MockData.memberName(t.fromId)} pays',
+                                  '${MemberDirectory.nameFor(t.fromId)} pays',
                                   textAlign: TextAlign.right,
                                   style: AppTypography.label.copyWith(
                                     color: AppPalette.current.ink,
@@ -149,7 +129,7 @@ Future<void> showSettleUp(
                                   horizontal: AppSpacing.sm,
                                 ),
                                 child: Text(
-                                  Money.format(t.amountMinor, batch.currency),
+                                  Money.format(t.amountMinor, crib.currency),
                                   style: AppTypography.titleSmall.copyWith(
                                     color: AppPalette.current.ink,
                                     fontWeight: FontWeight.w800,
@@ -157,7 +137,7 @@ Future<void> showSettleUp(
                                 ),
                               ),
                               Text(
-                                'to ${MockData.memberName(t.toId)}',
+                                'to ${MemberDirectory.nameFor(t.toId)}',
                                 style: AppTypography.label.copyWith(
                                   color: AppPalette.current.ink,
                                   fontWeight: FontWeight.w800,
@@ -171,34 +151,63 @@ Future<void> showSettleUp(
                   ),
                 ),
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Recording each transfer as a square-up expense.',
-                style: AppTypography.caption.copyWith(
-                  color: AppPalette.current.grey,
+              if (mine.isEmpty)
+                Text(
+                  'Nothing for you to record here. Ask the others to settle '
+                  'their own transfers.',
+                  style: AppTypography.caption.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
+                )
+              else
+                Text(
+                  'Recording your transfer as a self-managed settlement.',
+                  style: AppTypography.caption.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
                 ),
-              ),
+              if (theirs.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '${theirs.length} transfer${theirs.length == 1 ? '' : 's'} '
+                  'belong to other members. They record those themselves.',
+                  style: AppTypography.caption.copyWith(
+                    color: AppPalette.current.grey,
+                  ),
+                ),
+              ],
             ],
           ),
-    footer: transfers.isEmpty
+    footer: mine.isEmpty
         ? null
         : PrimaryButton(
-            label: 'Record transfers',
-            onPressed: () {
-              for (final t in transfers) {
-                MockData.expenses.add(
-                  Expense(
-                    id: 'e${DateTime.now().millisecondsSinceEpoch}-sq-${t.toId}',
-                    batchId: batch.id,
-                    description: 'Square-up to ${MockData.memberName(t.toId)}',
-                    totalMinor: t.amountMinor,
-                    currency: batch.currency,
-                    payerId: t.fromId,
-                    shares: {t.toId: t.amountMinor},
-                    date: DateTime.now(),
-                    category: 'other',
-                  ),
-                );
+            label: 'Record my transfer${mine.length == 1 ? '' : 's'}',
+            onPressed: () async {
+              // One key per request: a replay of the same request returns the
+              // original settlement, a later request records a new transfer.
+              final requestId = DateTime.now().microsecondsSinceEpoch;
+              try {
+                for (final t in mine) {
+                  await PayCalRepositories.instance.settlements.create(
+                    Settlement(
+                      id: 'e${DateTime.now().millisecondsSinceEpoch}-sq-${t.toId}',
+                      cribId: crib.id,
+                      currency: crib.currency,
+                      fromMemberId: t.fromId,
+                      toMemberId: t.toId,
+                      amountMinor: t.amountMinor,
+                      status: SettlementStatus.selfManaged,
+                      createdAt: DateTime.now(),
+                      idempotencyKey:
+                          '${crib.id}:${t.fromId}:${t.toId}:${t.amountMinor}:$requestId',
+                    ),
+                  );
+                }
+              } on RepositoryException catch (error) {
+                if (context.mounted) showAppToast(context, error.message);
+                return;
               }
+              if (!context.mounted) return;
               Navigator.of(context).pop();
               onRecorded?.call();
               showQuirkyConfirm(context, 'All square!');

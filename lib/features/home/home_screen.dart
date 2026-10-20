@@ -11,9 +11,9 @@ import 'package:paycal/core/widgets/avatar.dart';
 import 'package:paycal/core/widgets/solid_bottom_nav.dart';
 import 'package:paycal/core/widgets/app_toast.dart';
 import 'package:paycal/core/settings/app_settings.dart';
-import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
-import 'package:paycal/domain/balance_engine.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/domain/financial_ledger.dart';
 import 'package:paycal/features/expenses/quick_add_sheet.dart';
 import 'package:paycal/features/scans/scan_flow.dart';
 import 'package:paycal/features/search/search_screen.dart';
@@ -41,29 +41,25 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? selected;
 
-  int net(Batch b) =>
-      BalanceEngine.nets(
-        MockData.expenses
-            .where((e) => e.batchId == b.id)
-            .map(
-              (e) => ExpenseInput(
-                totalMinor: e.totalMinor,
-                payerId: e.payerId,
-                shares: e.shares,
-              ),
-            )
-            .toList(),
-        b.members.map((m) => m.id).toList(),
-      )[MockData.meId] ??
+  int net(Crib b) =>
+      FinancialLedger.balances(
+        crib: b,
+        expenses: PayCalRepositories.instance.expenses.cachedExpenses.where(
+          (expense) => expense.cribId == b.id,
+        ),
+        settlements: PayCalRepositories.instance.settlements.cachedSettlements
+            .where((settlement) => settlement.cribId == b.id),
+      )[PayCalRepositories.instance.currentUserId] ??
       0;
 
-  int spent(Batch b) => MockData.expenses
-      .where((e) => e.batchId == b.id)
+  int spent(Crib b) => PayCalRepositories.instance.expenses.cachedExpenses
+      .where((e) => e.cribId == b.id)
       .fold<int>(0, (sum, e) => sum + e.totalMinor);
 
-  int paidBy(String memberId) => MockData.expenses
-      .where((e) => e.payerId == memberId)
-      .fold<int>(0, (sum, e) => sum + e.totalMinor);
+  int paidBy(String memberId) =>
+      PayCalRepositories.instance.expenses.cachedExpenses
+          .where((e) => e.payerId == memberId)
+          .fold<int>(0, (sum, e) => sum + e.totalMinor);
 
   void toast(String s) {
     showAppToast(context, '$s is coming soon.');
@@ -88,20 +84,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext c) {
-    var owed = 0, owe = 0;
-    for (final b in MockData.batches) {
-      final n = net(b);
-      if (n > 0) {
-        owed += n;
-      } else {
-        owe -= n;
-      }
+    final balancesByCurrency = <String, int>{};
+    for (final b in PayCalRepositories.instance.cribs.cachedCribs) {
+      balancesByCurrency[b.currency] =
+          (balancesByCurrency[b.currency] ?? 0) + net(b);
     }
-    final me = MockData.me;
-    final contacts = MockData.batches.isEmpty
+    final onlyCurrency = balancesByCurrency.length == 1
+        ? balancesByCurrency.keys.single
+        : null;
+    final meId = PayCalRepositories.instance.currentUserId;
+    final meName =
+        PayCalRepositories.instance.auth.currentUser?.name ?? 'You';
+    final contacts = PayCalRepositories.instance.cribs.cachedCribs.isEmpty
         ? <Member>[]
-        : MockData.batches.first.members
-              .where((m) => m.id != me.id)
+        : PayCalRepositories.instance.cribs.cachedCribs.first.members
+              .where((m) => m.id != meId)
               .take(4)
               .toList();
 
@@ -129,8 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       _TopBar(onTap: _onTopAction),
                       SizedBox(height: 18),
                       _HeroCard(
-                        name: me.name,
-                        amount: owed - owe,
+                        name: meName,
+                        amount: onlyCurrency == null
+                            ? null
+                            : balancesByCurrency[onlyCurrency],
+                        currency: onlyCurrency,
                         hidden: AppSettings.instance.amountHidden,
                         onEye: () {
                           AppSettings.instance.update(
@@ -251,11 +251,13 @@ class _HeroCard extends StatefulWidget {
   const _HeroCard({
     required this.name,
     required this.amount,
+    required this.currency,
     required this.hidden,
     required this.onEye,
   });
   final String name;
-  final int amount;
+  final int? amount;
+  final String? currency;
   final bool hidden;
   final VoidCallback onEye;
 
@@ -397,11 +399,12 @@ class _HeroCardState extends State<_HeroCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.amount >= 0 ? 'You are owed:' : 'You owe:',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 12,
-                    ),
+                    widget.amount == null
+                        ? 'Balances by currency:'
+                        : widget.amount! >= 0
+                        ? 'You are owed:'
+                        : 'You owe:',
+                    style: TextStyle(color: AppColors.ink, fontSize: 12),
                   ),
                   SizedBox(height: 2),
                   FittedBox(
@@ -411,9 +414,14 @@ class _HeroCardState extends State<_HeroCard> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          widget.hidden
+                          widget.amount == null
+                              ? 'See cribs'
+                              : widget.hidden
                               ? '••••'
-                              : Money.format(widget.amount.abs(), 'INR'),
+                              : Money.format(
+                                  widget.amount!.abs(),
+                                  widget.currency!,
+                                ),
                           style: AppTypography.title.copyWith(
                             color: AppColors.ink,
                             fontSize: 28,
@@ -490,7 +498,7 @@ class _HeroCardState extends State<_HeroCard> {
         ),
         SizedBox(height: 12),
         QrImageView(
-          data: 'paycal://user/${MockData.meId}',
+          data: 'paycal://user/${PayCalRepositories.instance.currentUserId}',
           version: QrVersions.auto,
           size: 104,
           eyeStyle: QrEyeStyle(
@@ -520,7 +528,7 @@ class _HeroCardState extends State<_HeroCard> {
                     text:
                         'Pay and split with me on PayCal — '
                         'scan this code or open the link: '
-                        'paycal://user/${MockData.meId}',
+                        'paycal://user/${PayCalRepositories.instance.currentUserId}',
                     title: 'My PayCal code',
                   ),
                 );
@@ -812,25 +820,25 @@ class _Pick extends StatelessWidget {
   );
 }
 
-class _BatchDeck extends StatefulWidget {
-  const _BatchDeck({
-    required this.batches,
+class _CribDeck extends StatefulWidget {
+  const _CribDeck({
+    required this.cribs,
     required this.balanceFor,
     required this.spentFor,
     required this.onCreate,
     required this.onOpen,
   });
-  final List<Batch> batches;
-  final int Function(Batch) balanceFor;
-  final int Function(Batch) spentFor;
+  final List<Crib> cribs;
+  final int Function(Crib) balanceFor;
+  final int Function(Crib) spentFor;
   final VoidCallback onCreate;
-  final ValueChanged<Batch> onOpen;
+  final ValueChanged<Crib> onOpen;
 
   @override
-  State<_BatchDeck> createState() => _BatchDeckState();
+  State<_CribDeck> createState() => _CribDeckState();
 }
 
-class _BatchDeckState extends State<_BatchDeck> {
+class _CribDeckState extends State<_CribDeck> {
   late final PageController _controller;
   var _page = 0;
 
@@ -848,7 +856,7 @@ class _BatchDeckState extends State<_BatchDeck> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.batches.isEmpty) {
+    if (widget.cribs.isEmpty) {
       return _EmptyDeck(onCreate: widget.onCreate);
     }
     return Column(
@@ -866,7 +874,7 @@ class _BatchDeckState extends State<_BatchDeck> {
             const Spacer(),
             IconButton(
               onPressed: widget.onCreate,
-              tooltip: 'Create a batch',
+              tooltip: 'Create a crib',
               icon: Container(
                 width: 32,
                 height: 32,
@@ -898,19 +906,19 @@ class _BatchDeckState extends State<_BatchDeck> {
           height: 205,
           child: PageView.builder(
             controller: _controller,
-            itemCount: widget.batches.length,
+            itemCount: widget.cribs.length,
             onPageChanged: (value) => setState(() => _page = value),
             itemBuilder: (context, index) => AnimatedScale(
               duration: const Duration(milliseconds: 220),
               scale: index == _page ? 1 : .94,
               child: Padding(
                 padding: const EdgeInsets.only(right: 12),
-                child: _BatchCard(
-                  batch: widget.batches[index],
-                  balance: widget.balanceFor(widget.batches[index]),
-                  spent: widget.spentFor(widget.batches[index]),
+                child: _CribCard(
+                  crib: widget.cribs[index],
+                  balance: widget.balanceFor(widget.cribs[index]),
+                  spent: widget.spentFor(widget.cribs[index]),
                   color: index.isEven ? AppColors.purple : AppColors.pink,
-                  onTap: () => widget.onOpen(widget.batches[index]),
+                  onTap: () => widget.onOpen(widget.cribs[index]),
                 ),
               ),
             ),
@@ -919,7 +927,7 @@ class _BatchDeckState extends State<_BatchDeck> {
         const SizedBox(height: 10),
         Row(
           children: [
-            for (var i = 0; i < widget.batches.length; i++)
+            for (var i = 0; i < widget.cribs.length; i++)
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 margin: const EdgeInsets.only(right: 5),
@@ -946,15 +954,15 @@ class _BatchDeckState extends State<_BatchDeck> {
   }
 }
 
-class _BatchCard extends StatelessWidget {
-  const _BatchCard({
-    required this.batch,
+class _CribCard extends StatelessWidget {
+  const _CribCard({
+    required this.crib,
     required this.balance,
     required this.spent,
     required this.color,
     required this.onTap,
   });
-  final Batch batch;
+  final Crib crib;
   final int balance, spent;
   final Color color;
   final VoidCallback onTap;
@@ -1003,7 +1011,7 @@ class _BatchCard extends StatelessWidget {
                   const SizedBox(width: 9),
                   Expanded(
                     child: Text(
-                      batch.name,
+                      crib.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.titleSmall.copyWith(
@@ -1025,7 +1033,7 @@ class _BatchCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                Money.format(balance.abs(), batch.currency),
+                Money.format(balance.abs(), crib.currency),
                 style: AppTypography.headline.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -1033,7 +1041,7 @@ class _BatchCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${batch.members.length} people · ${Money.format(spent, batch.currency)} tracked',
+                '${crib.activeMembers.length} people · ${Money.format(spent, crib.currency)} tracked',
                 style: AppTypography.caption.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,

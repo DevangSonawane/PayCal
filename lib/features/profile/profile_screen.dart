@@ -17,8 +17,10 @@ import 'package:paycal/core/widgets/sticker_pill.dart';
 import 'package:paycal/core/widgets/wedge_loader.dart';
 import 'package:paycal/core/utils/party_mode.dart';
 import 'package:paycal/core/utils/money.dart';
-import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
+import 'package:paycal/domain/financial_ledger.dart';
 import 'package:paycal/features/onboarding/welcome_screen.dart';
 
 const _currencies = ['INR', 'USD', 'EUR', 'GBP'];
@@ -52,15 +54,16 @@ class _StripePainter extends CustomPainter {
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  int _netForBatch(Batch b) {
-    var net = 0;
-    for (final e in MockData.expenses) {
-      if (e.batchId != b.id) continue;
-      if (e.payerId == MockData.meId) net += e.totalMinor;
-      net -= e.shares[MockData.meId] ?? 0;
-    }
-    return net;
-  }
+  int _netForCrib(Crib b) =>
+      FinancialLedger.balances(
+        crib: b,
+        expenses: PayCalRepositories.instance.expenses.cachedExpenses.where(
+          (expense) => expense.cribId == b.id,
+        ),
+        settlements: PayCalRepositories.instance.settlements.cachedSettlements
+            .where((settlement) => settlement.cribId == b.id),
+      )[PayCalRepositories.instance.currentUserId] ??
+      0;
 
   Future<void> _editProfile(BuildContext context) async {
     final name = TextEditingController(text: AppSettings.instance.userName);
@@ -79,17 +82,28 @@ class ProfileScreen extends StatelessWidget {
       ),
       footer: PrimaryButton(
         label: 'Save',
-        onPressed: () {
-          Navigator.of(context).pop();
+        onPressed: () async {
+          final cleanName = name.text.trim();
+          final cleanEmail = email.text.trim();
+          if (cleanName.isEmpty || !cleanEmail.contains('@')) {
+            showAppToast(context, 'A name and a valid email are needed');
+            return;
+          }
+          try {
+            await PayCalRepositories.instance.auth.updateProfile(
+              name: cleanName,
+              email: cleanEmail,
+            );
+          } on RepositoryException catch (error) {
+            if (context.mounted) showAppToast(context, error.message);
+            return;
+          }
           AppSettings.instance.update(
-            userName: name.text,
-            userEmail: email.text,
+            userName: cleanName,
+            userEmail: cleanEmail,
           );
-          MockData.me = Member(
-            id: MockData.meId,
-            name: AppSettings.instance.userName,
-            isAdmin: true,
-          );
+          if (!context.mounted) return;
+          Navigator.of(context).pop();
           showAppToast(context, 'Profile updated');
         },
       ),
@@ -188,7 +202,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.md),
           Text(
-            'Never sell your data. Your spends stay between the people in the batch.',
+            'Never sell your data. Your spends stay between the people in the crib.',
             style: AppTypography.caption.copyWith(
               color: AppPalette.current.grey,
             ),
@@ -205,18 +219,21 @@ class ProfileScreen extends StatelessWidget {
   Future<void> _help(BuildContext context) => _staticPop(context, 'Help', [
     'Scan a friend\u2019s QR code to pay them or split a bill.',
     'Flip your balance card to show your code.',
-    'Settle up from a batch menu to see the fewest transfers.',
+    'Settle up from a crib menu to see the fewest transfers.',
   ]);
 
   Future<void> _terms(BuildContext context) =>
       _staticPop(context, 'Terms and Privacy', [
         'PayCal is a demo app; all data lives on your device.',
-        'Deleting a batch removes shared pending expenses for everyone.',
+        'Deleting a crib removes shared pending expenses for everyone.',
         'Flagged expenses keep the paper trail, so nobody gaslights you.',
       ]);
 
   Future<void> _balanceBreakdown(BuildContext context) async {
-    final rows = [for (final b in MockData.batches) (b, _netForBatch(b))];
+    final rows = [
+      for (final b in PayCalRepositories.instance.cribs.cachedCribs)
+        (b, _netForCrib(b)),
+    ];
     final currency = AppSettings.instance.currencyCode;
     await showPopCard<void>(
       context: context,
@@ -484,7 +501,7 @@ class ProfileScreen extends StatelessWidget {
                         SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
-                            'Balance across batches',
+                            'Balance across cribs',
                             style: AppTypography.label.copyWith(
                               color: AppColors.ink,
                               fontWeight: FontWeight.w800,

@@ -3,8 +3,9 @@ import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/utils/validators.dart';
-import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
 import 'package:paycal/core/widgets/app_toast.dart';
 import 'package:paycal/core/widgets/confetti_burst.dart';
@@ -20,14 +21,14 @@ import 'package:paycal/features/shell/main_shell.dart';
 
 const currencies = ['INR', 'USD', 'EUR', 'GBP'];
 
-class FirstBatchScreen extends StatefulWidget {
-  const FirstBatchScreen({super.key, required this.draft});
+class FirstCribScreen extends StatefulWidget {
+  const FirstCribScreen({super.key, required this.draft});
   final OnboardingDraft draft;
   @override
-  State<FirstBatchScreen> createState() => _FirstBatchScreenState();
+  State<FirstCribScreen> createState() => _FirstCribScreenState();
 }
 
-class _FirstBatchScreenState extends State<FirstBatchScreen> {
+class _FirstCribScreenState extends State<FirstCribScreen> {
   int _tab = 0;
   late final TextEditingController _name;
   String _currency = 'INR';
@@ -41,7 +42,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
       (r) => r.id == widget.draft.role,
       orElse: () => roles[1],
     );
-    _name = TextEditingController(text: role.batchHint);
+    _name = TextEditingController(text: role.cribHint);
     _cats = List.of(
       widget.draft.splitTypes.isEmpty
           ? role.categories
@@ -56,17 +57,17 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
     super.dispose();
   }
 
-  void _continue() {
+  Future<void> _continue() async {
     if (_tab == 1 && _code.text.trim().isEmpty) {
       showAppToast(context, 'Paste the invite link or code first');
       return;
     }
     if (_tab == 0 &&
-        (Validators.batchName(_name.text) != null || _cats.isEmpty)) {
-      if (Validators.batchName(_name.text) != null) {
+        (Validators.cribName(_name.text) != null || _cats.isEmpty)) {
+      if (Validators.cribName(_name.text) != null) {
         showAppToast(
           context,
-          'This batch needs a name — even "The Fund" works.',
+          'This crib needs a name — even "The Fund" works.',
         );
         return;
       }
@@ -78,24 +79,30 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
         return;
       }
     }
-    // Apply the onboarding answers to the live data: the batch the user just
-    // named becomes a real batch, and the household size fills it with
-    // placeholder members so the demo has someone to split with.
+    // Apply the onboarding answers to the live data: the crib the user just
+    // named becomes a real crib, and the household size fills it with
+    // placeholder members so the demo has someone to split with. The creator
+    // is added by the repository as the owner.
     final household = widget.draft.householdSize.clamp(1, 10);
     final members = <Member>[
-      MockData.me,
       for (var i = 1; i < household; i++)
         Member(id: 'ob$i', name: 'Housemate $i'),
     ];
-    MockData.batches.add(
-      Batch(
-        id: 'ob${DateTime.now().millisecondsSinceEpoch}',
-        name: _name.text.trim(),
-        currency: _currency,
-        members: members,
-        categories: _cats.isEmpty ? ['other'] : _cats,
-      ),
-    );
+    try {
+      await PayCalRepositories.instance.cribs.create(
+        Crib(
+          id: 'ob${DateTime.now().millisecondsSinceEpoch}',
+          name: _name.text.trim(),
+          currency: _currency,
+          members: members,
+          categories: _cats.isEmpty ? ['other'] : _cats,
+        ),
+      );
+    } on RepositoryException catch (error) {
+      if (mounted) showAppToast(context, error.message);
+      return;
+    }
+    if (!mounted) return;
     widget.draft.clear();
     showConfettiBurst(context);
     Navigator.of(context)
@@ -169,7 +176,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                     SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        'Your first batch',
+                        'Your first crib',
                         style: AppTypography.headline.copyWith(
                           color: AppPalette.current.ink,
                           fontWeight: FontWeight.w800,
@@ -180,14 +187,14 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                 ),
                 SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Batches keep shared money in one tidy place. Name it, pick categories, done.',
+                  'Cribs keep shared money in one tidy place. Name it, pick categories, done.',
                   style: AppTypography.body.copyWith(
                     color: AppPalette.current.grey,
                   ),
                 ),
                 SizedBox(height: AppSpacing.lg),
                 SegmentedControl(
-                  tabs: ['Create a batch', 'Join with a link'],
+                  tabs: ['Create a crib', 'Join with a link'],
                   selected: _tab,
                   onSelect: (i) => setState(() => _tab = i),
                 ),
@@ -218,7 +225,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
                   ),
                 ),
                 PrimaryButton(
-                  label: _tab == 0 ? 'Create batch' : 'Request to join',
+                  label: _tab == 0 ? 'Create crib' : 'Request to join',
                   onPressed: _continue,
                 ),
                 SizedBox(height: AppSpacing.sm),
@@ -240,7 +247,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppTextField(label: 'Batch name', controller: _name),
+        AppTextField(label: 'Crib name', controller: _name),
         SizedBox(height: AppSpacing.lg),
         Text(
           'Currency',
@@ -265,7 +272,7 @@ class _FirstBatchScreenState extends State<FirstBatchScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Everyone in this batch uses this currency. You can change it later; amounts will not be converted.',
+          'Everyone in this crib uses this currency. You can change it later; amounts will not be converted.',
           style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
         ),
         const SizedBox(height: AppSpacing.lg),

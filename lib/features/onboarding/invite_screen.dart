@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:paycal/core/config/app_config.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
@@ -10,10 +13,60 @@ import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/quiet_text_button.dart';
 import 'package:paycal/core/widgets/secondary_button.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/models.dart';
+import 'package:paycal/data/repositories.dart';
 import 'package:paycal/features/shell/main_shell.dart';
 
-class InviteScreen extends StatelessWidget {
+class InviteScreen extends StatefulWidget {
   const InviteScreen({super.key});
+
+  @override
+  State<InviteScreen> createState() => _InviteScreenState();
+}
+
+class _InviteScreenState extends State<InviteScreen> {
+  /// The invite link of the crib the user just created. It carries an
+  /// opaque token, never a crib id.
+  String _link = '';
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_prepareLink());
+  }
+
+  Future<void> _prepareLink() async {
+    final repositories = PayCalRepositories.instance;
+    final meId = repositories.currentUserId;
+    Crib? crib;
+    for (final candidate in repositories.cribs.cachedCribs.reversed) {
+      if (candidate.ownerId == meId) {
+        crib = candidate;
+        break;
+      }
+    }
+    if (crib == null) return;
+    try {
+      final existing = await repositories.invitations.list(cribId: crib.id);
+      final active = existing
+          .where(
+            (item) =>
+                item.statusAt(DateTime.now()) == InvitationStatus.active,
+          )
+          .firstOrNull;
+      final token = active?.token ??
+          (await repositories.invitations.create(
+            cribId: crib.id,
+            createdById: meId,
+            expiresAt: DateTime.now().add(AppConfig.invitationLifetime),
+          )).token;
+      if (!mounted) return;
+      setState(() => _link = AppConfig.invitationLink(token));
+    } on RepositoryException catch (_) {
+      return;
+    }
+  }
 
   void _finish(BuildContext context) {
     showConfettiBurst(context);
@@ -84,7 +137,7 @@ class InviteScreen extends StatelessWidget {
               ),
               SizedBox(height: AppSpacing.sm),
               Text(
-                'Your first batch is ready to roll. Go split something.',
+                'Your first crib is ready to roll. Go split something.',
                 textAlign: TextAlign.center,
                 style: AppTypography.body.copyWith(
                   color: AppPalette.current.grey,
@@ -107,7 +160,7 @@ class InviteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const link = 'https://paycal.app/join/our-flat-8X2K';
+    final link = _link;
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
@@ -209,7 +262,7 @@ class InviteScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          link,
+                          link.isEmpty ? 'Preparing your link…' : link,
                           style: AppTypography.body.copyWith(
                             color: AppPalette.current.ink,
                             fontWeight: FontWeight.w700,
@@ -218,6 +271,7 @@ class InviteScreen extends StatelessWidget {
                       ),
                       GestureDetector(
                         onTap: () {
+                          if (link.isEmpty) return;
                           Clipboard.setData(ClipboardData(text: link));
                           showAppToast(context, 'Invite link copied');
                         },
@@ -247,11 +301,15 @@ class InviteScreen extends StatelessWidget {
                 PrimaryButton(
                   label: 'Share invite link',
                   onPressed: () async {
+                    if (link.isEmpty) {
+                      showAppToast(context, 'Your link is still being prepared');
+                      return;
+                    }
                     Clipboard.setData(ClipboardData(text: link));
                     try {
                       await SharePlus.instance.share(
                         ShareParams(
-                          text: 'Join my batch on PayCal: $link',
+                          text: 'Join my crib on PayCal: $link',
                           subject: 'PayCal invite',
                         ),
                       );

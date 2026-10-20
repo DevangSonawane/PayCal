@@ -16,8 +16,8 @@ class Validators {
     return null;
   }
 
-  static String? batchName(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Give your batch a name.';
+  static String? cribName(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Give your crib a name.';
     return null;
   }
 

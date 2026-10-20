@@ -14,8 +14,8 @@ class AppSettings extends ChangeNotifier {
   String currencyCode = 'INR';
   bool amountHidden = false;
   bool notificationsOn = true;
-  int batchesFilterIndex = 0;
-  int batchesSortIndex = 0;
+  int cribsFilterIndex = 0;
+  int cribsSortIndex = 0;
 
   String get currencySymbol => switch (currencyCode) {
     'INR' => '₹',
@@ -47,9 +47,14 @@ class AppSettings extends ChangeNotifier {
       currencyCode = json['currencyCode'] as String? ?? currencyCode;
       amountHidden = json['amountHidden'] as bool? ?? amountHidden;
       notificationsOn = json['notificationsOn'] as bool? ?? notificationsOn;
-      batchesFilterIndex =
-          json['batchesFilterIndex'] as int? ?? batchesFilterIndex;
-      batchesSortIndex = json['batchesSortIndex'] as int? ?? batchesSortIndex;
+      cribsFilterIndex =
+          json['cribsFilterIndex'] as int? ??
+          json['batchesFilterIndex'] as int? ??
+          cribsFilterIndex;
+      cribsSortIndex =
+          json['cribsSortIndex'] as int? ??
+          json['batchesSortIndex'] as int? ??
+          cribsSortIndex;
       // PayCal intentionally ships a single, carefully tuned light theme.
       AppPalette.current = AppPalette.light;
     } on FormatException {
@@ -68,8 +73,8 @@ class AppSettings extends ChangeNotifier {
         'currencyCode': currencyCode,
         'amountHidden': amountHidden,
         'notificationsOn': notificationsOn,
-        'batchesFilterIndex': batchesFilterIndex,
-        'batchesSortIndex': batchesSortIndex,
+        'cribsFilterIndex': cribsFilterIndex,
+        'cribsSortIndex': cribsSortIndex,
       }),
     );
   }
@@ -80,8 +85,8 @@ class AppSettings extends ChangeNotifier {
     String? currencyCode,
     bool? amountHidden,
     bool? notificationsOn,
-    int? batchesFilterIndex,
-    int? batchesSortIndex,
+    int? cribsFilterIndex,
+    int? cribsSortIndex,
   }) {
     if (userName != null) {
       this.userName = userName.trim().isEmpty ? this.userName : userName.trim();
@@ -90,10 +95,10 @@ class AppSettings extends ChangeNotifier {
     if (currencyCode != null) this.currencyCode = currencyCode;
     if (amountHidden != null) this.amountHidden = amountHidden;
     if (notificationsOn != null) this.notificationsOn = notificationsOn;
-    if (batchesFilterIndex != null) {
-      this.batchesFilterIndex = batchesFilterIndex;
+    if (cribsFilterIndex != null) {
+      this.cribsFilterIndex = cribsFilterIndex;
     }
-    if (batchesSortIndex != null) this.batchesSortIndex = batchesSortIndex;
+    if (cribsSortIndex != null) this.cribsSortIndex = cribsSortIndex;
     notifyListeners();
     unawaitedSave();
   }

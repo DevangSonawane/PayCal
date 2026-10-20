@@ -1,5 +1,8 @@
-/// Pure-Dart balance / split engine. All screens read balances from here.
-/// Money is integer minor units. No doubles for money.
+import 'package:paycal/data/models.dart';
+import 'package:paycal/domain/financial_ledger.dart';
+
+/// Legacy adapter retained while screens are migrated to [FinancialLedger].
+/// New domain code must use FinancialLedger directly.
 class ExpenseInput {
   ExpenseInput({
     required this.totalMinor,
@@ -12,19 +15,17 @@ class ExpenseInput {
 }
 
 class BalanceEngine {
-  /// Equal split. Remainder minor units go to the payer (temporary default, TODO: PRD decision).
+  /// Equal split. Remainder minor units go to the payer first.
   static Map<String, int> equalSplit({
     required int totalMinor,
     required List<String> memberIds,
     required String payerId,
   }) {
-    if (memberIds.isEmpty) return {};
-    final per = totalMinor ~/ memberIds.length;
-    var remainder = totalMinor - per * memberIds.length;
-    final shares = <String, int>{for (final m in memberIds) m: per};
-    shares[payerId] = (shares[payerId] ?? 0) + remainder;
-    remainder = 0;
-    return shares;
+    return FinancialLedger.equalSplit(
+      totalMinor: totalMinor,
+      participantIds: memberIds,
+      payerId: payerId,
+    );
   }
 
   /// Net per member: positive = owed to them, negative = they owe.
@@ -32,14 +33,28 @@ class BalanceEngine {
     List<ExpenseInput> expenses,
     List<String> memberIds,
   ) {
-    final paid = <String, int>{for (final m in memberIds) m: 0};
-    final share = <String, int>{for (final m in memberIds) m: 0};
-    for (final e in expenses) {
-      paid[e.payerId] = (paid[e.payerId] ?? 0) + e.totalMinor;
-      for (final entry in e.shares.entries) {
-        share[entry.key] = (share[entry.key] ?? 0) + entry.value;
-      }
-    }
-    return {for (final m in memberIds) m: (paid[m] ?? 0) - (share[m] ?? 0)};
+    final crib = Crib(
+      id: '_legacy',
+      name: '_legacy',
+      currency: '_legacy',
+      members: [for (final id in memberIds) Member(id: id, name: id)],
+      categories: const [],
+    );
+    final ledgerExpenses = expenses
+        .map(
+          (expense) => Expense(
+            id: '${expense.payerId}-${expense.totalMinor}',
+            cribId: crib.id,
+            description: '_legacy',
+            totalMinor: expense.totalMinor,
+            currency: crib.currency,
+            payerId: expense.payerId,
+            shares: expense.shares,
+            date: DateTime.fromMillisecondsSinceEpoch(0),
+            category: '_legacy',
+          ),
+        )
+        .toList();
+    return FinancialLedger.balances(crib: crib, expenses: ledgerExpenses);
   }
 }

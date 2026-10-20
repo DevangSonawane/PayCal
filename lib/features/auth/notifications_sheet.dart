@@ -5,7 +5,7 @@ import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/quiet_text_button.dart';
-import 'package:paycal/features/onboarding/first_batch_screen.dart';
+import 'package:paycal/features/onboarding/first_crib_screen.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 
 /// Full-screen notifications opt-in step (was a sheet floating over the
@@ -17,7 +17,7 @@ class NotificationsPage extends StatelessWidget {
 
   void _go(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => FirstBatchScreen(draft: draft)),
+      MaterialPageRoute(builder: (_) => FirstCribScreen(draft: draft)),
       (r) => r.isFirst,
     );
   }
@@ -99,7 +99,7 @@ class NotificationsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                _line('New expenses in your batches'),
+                _line('New expenses in your cribs'),
                 _line('Payment requests and reminders'),
                 _line('Weekly quiet summaries'),
                 const Spacer(),

@@ -11,22 +11,22 @@ import 'package:paycal/core/widgets/money_text.dart';
 import 'package:paycal/core/widgets/quirky_confirm.dart';
 import 'package:paycal/core/widgets/sticker_pill.dart';
 import 'package:paycal/core/widgets/wedge_loader.dart';
-import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
-import 'package:paycal/domain/balance_engine.dart';
-import 'package:paycal/features/batches/batch_detail_screen.dart';
-import 'package:paycal/features/batches/batch_edit_sheet.dart';
-import 'package:paycal/features/batches/create_batch_popup.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/domain/financial_ledger.dart';
+import 'package:paycal/features/cribs/crib_detail_screen.dart';
+import 'package:paycal/features/cribs/crib_edit_sheet.dart';
+import 'package:paycal/features/cribs/create_crib_popup.dart';
 
 enum _Filter { all, owed, owe, settled }
 
-class BatchesScreen extends StatefulWidget {
-  const BatchesScreen({super.key});
+class CribsScreen extends StatefulWidget {
+  const CribsScreen({super.key});
   @override
-  State<BatchesScreen> createState() => _BatchesScreenState();
+  State<CribsScreen> createState() => _CribsScreenState();
 }
 
-class _BatchesScreenState extends State<BatchesScreen> {
+class _CribsScreenState extends State<CribsScreen> {
   late _Filter filter;
 
   @override
@@ -34,30 +34,24 @@ class _BatchesScreenState extends State<BatchesScreen> {
     super.initState();
     const filters = _Filter.values;
     final s = AppSettings.instance;
-    filter = filters[s.batchesFilterIndex.clamp(0, filters.length - 1)];
+    filter = filters[s.cribsFilterIndex.clamp(0, filters.length - 1)];
   }
 
   void _setFilter(_Filter f) {
     setState(() => filter = f);
-    AppSettings.instance.update(batchesFilterIndex: _Filter.values.indexOf(f));
+    AppSettings.instance.update(cribsFilterIndex: _Filter.values.indexOf(f));
   }
 
-  int _netFor(Batch b) {
-    final inputs = MockData.expenses
-        .where((e) => e.batchId == b.id)
-        .map(
-          (e) => ExpenseInput(
-            totalMinor: e.totalMinor,
-            payerId: e.payerId,
-            shares: e.shares,
+  int _netFor(Crib b) {
+    return FinancialLedger.balances(
+          crib: b,
+          expenses: PayCalRepositories.instance.expenses.cachedExpenses.where(
+            (expense) => expense.cribId == b.id,
           ),
-        )
-        .toList();
-    return BalanceEngine.nets(
-          inputs,
-          b.members.map((m) => m.id).toList(),
-        )[MockData.meId] ??
-        0;
+          settlements: PayCalRepositories.instance.settlements.cachedSettlements
+              .where((settlement) => settlement.cribId == b.id),
+      )[PayCalRepositories.instance.currentUserId] ??
+      0;
   }
 
   bool _matches(int net) => switch (filter) {
@@ -67,29 +61,29 @@ class _BatchesScreenState extends State<BatchesScreen> {
     _Filter.settled => net == 0,
   };
 
-  void _open(Batch b) =>
+  void _open(Crib b) =>
       Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => BatchDetailScreen(batch: b)));
+          .push(MaterialPageRoute(builder: (_) => CribDetailScreen(crib: b)));
 
   Future<void> _onCreate() async {
-    final created = await showCreateBatch(context);
+    final created = await showCreateCrib(context);
     if (created && mounted) {
       setState(() {});
-      showQuirkyConfirm(context, 'All set! Batch created');
+      showQuirkyConfirm(context, 'All set! Crib created');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (MockData.batches.isEmpty) {
+    if (PayCalRepositories.instance.cribs.cachedCribs.isEmpty) {
       return Scaffold(
         backgroundColor: AppPalette.current.bg,
         body: SafeArea(
           child: Center(
             child: EmptyState(
-              title: 'No batches yet',
-              body: 'Batches are where shared money lives. Start one — rent, trips, that suspiciously expensive team lunch.',
-              actionLabel: 'Create batch',
+              title: 'No cribs yet',
+              body: 'Cribs are where shared money lives. Start one — rent, trips, that suspiciously expensive team lunch.',
+              actionLabel: 'Create crib',
               onAction: _onCreate,
             ),
           ),
@@ -97,7 +91,10 @@ class _BatchesScreenState extends State<BatchesScreen> {
       );
     }
 
-    final nets = {for (final b in MockData.batches) b.id: _netFor(b)};
+    final nets = {
+      for (final b in PayCalRepositories.instance.cribs.cachedCribs)
+        b.id: _netFor(b),
+    };
     var owed = 0, owe = 0;
     for (final n in nets.values) {
       if (n > 0) {
@@ -106,7 +103,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
         owe -= n;
       }
     }
-    final visible = MockData.batches
+    final visible = PayCalRepositories.instance.cribs.cachedCribs
         .where((b) => _matches(nets[b.id] ?? 0))
         .toList();
 
@@ -154,7 +151,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
                     WedgeBullet(),
                     SizedBox(width: 8),
                     Text(
-                      'Your batches',
+                      'Your cribs',
                       style: AppTypography.title.copyWith(
                         fontWeight: FontWeight.w800,
                         color: _BPalette.current.ink,
@@ -176,12 +173,12 @@ class _BatchesScreenState extends State<BatchesScreen> {
                   _NoMatches()
                 else
                   for (final b in visible)
-                    _BatchCard(
-                      batch: b,
+                    _CribCard(
+                      crib: b,
                       net: nets[b.id] ?? 0,
                       onTap: () => _open(b),
                       onEdit: () async {
-                        await showBatchEdit(
+                        await showCribEdit(
                           context,
                           b,
                           onDone: () => setState(() {}),
@@ -246,7 +243,7 @@ class _TopBar extends StatelessWidget {
         ),
         SizedBox(width: 8),
         Text(
-          'Batches',
+          'Cribs',
           style: AppTypography.title.copyWith(
             color: _BPalette.current.ink,
             fontSize: 24,
@@ -381,14 +378,14 @@ class _FilterRow extends StatelessWidget {
   );
 }
 
-class _BatchCard extends StatelessWidget {
-  const _BatchCard({
-    required this.batch,
+class _CribCard extends StatelessWidget {
+  const _CribCard({
+    required this.crib,
     required this.net,
     required this.onTap,
     required this.onEdit,
   });
-  final Batch batch;
+  final Crib crib;
   final int net;
   final VoidCallback onTap;
   final VoidCallback onEdit;
@@ -443,7 +440,7 @@ class _BatchCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            batch.name,
+                            crib.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.titleSmall.copyWith(
@@ -452,7 +449,7 @@ class _BatchCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${batch.members.length} members · ${batch.currency}',
+                            '${crib.activeMembers.length} members · ${crib.currency}',
                             style: AppTypography.caption.copyWith(
                               color: _BPalette.current.grey,
                             ),
@@ -488,7 +485,7 @@ class _BatchCard extends StatelessWidget {
                 Row(
                   children: [
                     AvatarStack(
-                      initials: batch.members.map((m) => m.initials).toList(),
+                      initials: crib.members.map((m) => m.initials).toList(),
                       size: 30,
                       max: 3,
                     ),
@@ -500,7 +497,7 @@ class _BatchCard extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: MoneyText(
                           amount: net.abs(),
-                          currency: batch.currency,
+                          currency: crib.currency,
                           direction: direction,
                         ),
                       ),
@@ -524,7 +521,7 @@ class _NoMatches extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 36),
     child: Text(
-      'Tumbleweeds — no batches match this filter.',
+      'Tumbleweeds — no cribs match this filter.',
       style: AppTypography.caption.copyWith(color: _BPalette.current.grey),
       textAlign: TextAlign.center,
     ),

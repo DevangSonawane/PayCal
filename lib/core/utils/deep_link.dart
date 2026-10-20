@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
@@ -8,12 +10,16 @@ import 'package:paycal/core/widgets/avatar.dart';
 import 'package:paycal/core/widgets/option_tile.dart';
 import 'package:paycal/core/widgets/pop_card.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
 import 'package:paycal/data/models.dart';
-import 'package:paycal/features/batches/batch_detail_screen.dart';
+import 'package:paycal/data/repositories.dart';
+import 'package:paycal/features/cribs/crib_detail_screen.dart';
 
-/// Routes paycal:// links. Opening a batch link joins it (if needed) and
-/// pushes its screen; a user link shows their card with the shared batch.
+/// Routes paycal:// links.
+///
+/// Only an opaque invitation token can change membership. A crib id in a URL
+/// is never a credential: the `paycal://crib/...` and `paycal://batch/...`
+/// links of earlier builds are rejected instead of joining a crib.
 class DeepLinks {
   static final _links = AppLinks();
   static bool _listening = false;
@@ -22,18 +28,24 @@ class DeepLinks {
     if (_listening) return;
     _listening = true;
     _links.uriLinkStream.listen(
-      (uri) => handle(uri, navigator),
+      (uri) => unawaited(handle(uri, navigator)),
       onError: (Object _) {},
     );
   }
 
-  static void handle(Uri uri, NavigatorState navigator) {
+  static Future<void> handle(Uri uri, NavigatorState navigator) async {
     if (uri.scheme != 'paycal') return;
     switch (uri.host) {
       case 'user':
         _handleUser(uri.path.replaceAll('/', ''), navigator);
+        return;
+      case 'invite':
+        await _handleInvitation(uri.path.replaceAll('/', ''), navigator);
+        return;
+      case 'crib':
       case 'batch':
-        _handleBatch(uri.path.replaceAll('/', ''), navigator);
+        _handleLegacyCribLink(navigator);
+        return;
       default:
         // Unknown link target: fill in when new host types exist.
         return;
@@ -41,7 +53,7 @@ class DeepLinks {
   }
 
   static Member? _findUser(String id) {
-    for (final b in MockData.batches) {
+    for (final b in PayCalRepositories.instance.cribs.cachedCribs) {
       for (final m in b.members) {
         if (m.id == id) return m;
       }
@@ -87,19 +99,22 @@ class DeepLinks {
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          for (final b in MockData.batches)
+          for (final b in PayCalRepositories.instance.cribs.cachedCribs)
             if (b.members.any((m) => m.id == member.id) &&
-                b.members.any((m) => m.id == MockData.meId))
+                b.members.any(
+                  (m) =>
+                      m.id == PayCalRepositories.instance.auth.currentUser?.id,
+                ))
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: OptionTile(
                   title: 'With ${b.name}',
-                  support: 'A batch you both share',
+                  support: 'A crib you both share',
                   onTap: () {
                     navigator.pop();
                     navigator.push(
                       MaterialPageRoute<void>(
-                        builder: (_) => BatchDetailScreen(batch: b),
+                        builder: (_) => CribDetailScreen(crib: b),
                       ),
                     );
                   },
@@ -111,19 +126,50 @@ class DeepLinks {
     );
   }
 
-  static void _handleBatch(String id, NavigatorState navigator) {
-    final batchId = id;
-    for (final b in [...MockData.batches]) {
-      if (b.id != batchId) continue;
-      if (!b.members.any((m) => m.id == MockData.meId)) {
-        b.members.add(Member(id: MockData.meId, name: MockData.me.name));
-        showAppToast(navigator.context, 'You joined ${b.name}');
-      }
-      navigator.push(
-        MaterialPageRoute<void>(builder: (_) => BatchDetailScreen(batch: b)),
+  /// Links of the shape `paycal://crib/<cribId>` (and the `paycal://batch/...`
+  /// links of earlier builds) carried no secret. They must not add anybody to
+  /// a crib.
+  static void _handleLegacyCribLink(NavigatorState navigator) {
+    final context = navigator.context;
+    if (context.mounted) {
+      showAppToast(
+        context,
+        'That invite link is out of date. Ask for a fresh one.',
       );
+    }
+  }
+
+  static Future<void> _handleInvitation(
+    String token,
+    NavigatorState navigator,
+  ) async {
+    final context = navigator.context;
+    if (token.isEmpty) {
+      if (context.mounted) {
+        showAppToast(context, 'That invitation link is incomplete');
+      }
       return;
     }
-    showAppToast(navigator.context, 'That batch invite does not exist');
+    try {
+      final crib = await PayCalRepositories.instance.invitations.accept(token);
+      if (!context.mounted) return;
+      showAppToast(context, 'You joined ${crib.name}');
+      navigator.push(
+        MaterialPageRoute<void>(
+          builder: (_) => CribDetailScreen(crib: crib),
+        ),
+      );
+    } on RepositoryException catch (error) {
+      if (context.mounted) {
+        showAppToast(context, error.message);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        showAppToast(
+          context,
+          'That invitation is invalid, expired, or unavailable',
+        );
+      }
+    }
   }
 }

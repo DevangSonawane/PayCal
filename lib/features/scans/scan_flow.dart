@@ -13,8 +13,9 @@ import 'package:paycal/core/widgets/option_tile.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/avatar.dart';
 import 'package:paycal/core/widgets/pop_card.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/data/repositories.dart';
 import 'package:paycal/features/expenses/quick_add_sheet.dart';
 
 /// Scan flow: reads another member's PayCal QR code with the camera, then
@@ -85,6 +86,9 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
     super.dispose();
   }
 
+  /// The signed-in member.
+  String get _meId => PayCalRepositories.instance.currentUserId;
+
   Member? _memberFromPayload(String? raw) {
     if (raw == null) return null;
     final uri = Uri.tryParse(raw);
@@ -92,10 +96,9 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
       return null;
     }
     final id = uri.path.replaceAll('/', '');
-    for (final batch in MockData.batches) {
-      for (final m in batch.members) {
-        if (m.id == id) return m;
-      }
+    for (final crib in PayCalRepositories.instance.cribs.cachedCribs) {
+      final member = crib.memberById(id);
+      if (member != null) return member;
     }
     return null;
   }
@@ -105,7 +108,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
       final raw = barcode.rawValue;
       if (raw == null) continue;
       if (raw.startsWith('paycal://user/') &&
-          raw.replaceAll('paycal://user/', '') == MockData.meId) {
+          raw.replaceAll('paycal://user/', '') == _meId) {
         _hint('That is your own code, cheeky!');
         continue;
       }
@@ -128,47 +131,50 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
     showAppToast(context, message);
   }
 
-  List<Batch> _sharedBatches(Member member) => [
-    for (final b in MockData.batches)
-      if (b.members.any((m) => m.id == MockData.meId) &&
+  List<Crib> get _cribs =>
+      PayCalRepositories.instance.cribs.cachedCribs;
+
+  List<Crib> _sharedCribs(Member member) => [
+    for (final b in _cribs)
+      if (b.members.any((m) => m.id == _meId) &&
           b.members.any((m) => m.id == member.id))
         b,
   ];
 
   /// Landing plan for the found card caption.
   String _landingLine() {
-    final shared = _sharedBatches(_peer!);
+    final shared = _sharedCribs(_peer!);
     return switch (shared.length) {
       1 => 'Lands in ${shared.first.name}',
-      0 => 'Pick a batch to add them to',
+      0 => 'Pick a crib to add them to',
       _ => 'Pick where it lands (${shared.length} shared)',
     };
   }
 
-  /// Guarantees a landing batch: picks the only shared batch, asks which one
-  /// when several are shared, or offers to add the person to a batch first
+  /// Guarantees a landing crib: picks the only shared crib, asks which one
+  /// when several are shared, or offers to add the person to a crib first
   /// when none is shared.
-  Future<Batch?> _pickLandingBatch(Member member) async {
-    final shared = _sharedBatches(member);
+  Future<Crib?> _pickLandingCrib(Member member) async {
+    final shared = _sharedCribs(member);
     if (shared.length == 1) return shared.first;
     final banner = shared.isEmpty ? 'first' : 'pick';
-    final picked = await showPopCard<Batch>(
+    final picked = await showPopCard<Crib>(
       context: context,
-      title: 'Which batch?',
+      title: 'Which crib?',
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             shared.isEmpty
-                ? '${member.name} is not in any of your batches. Add them to one to record this.'
-                : 'You share more than one batch with ${member.name}. Where should this land?',
+                ? '${member.name} is not in any of your cribs. Add them to one to record this.'
+                : 'You share more than one crib with ${member.name}. Where should this land?',
             style: AppTypography.caption.copyWith(
               color: AppPalette.current.grey,
             ),
           ),
           SizedBox(height: AppSpacing.md),
-          for (final b in MockData.batches)
+          for (final b in _cribs)
             Padding(
               padding: EdgeInsets.only(bottom: AppSpacing.sm),
               child: OptionTile(
@@ -177,25 +183,36 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
                     : '${b.name} (adds ${member.name})',
                 support: shared.any((s) => s.id == b.id)
                     ? 'You both are members'
-                    : 'New member added on save',
-                selected: banner == 'first' && b == MockData.batches.first,
-                onTap: () {
-                  if (!shared.any((s) => s.id == b.id)) {
-                    b.members.add(member);
-                  }
-                  Navigator.of(context).pop(b);
-                },
+                    : 'Only the crib owner can add them',
+                selected: banner == 'first' && b == _cribs.first,
+                onTap: () => Navigator.of(context).pop(b),
               ),
             ),
         ],
       ),
     );
+    if (picked == null) return null;
+    final alreadyMember = picked.members.any(
+      (m) => m.id == member.id && m.isActive,
+    );
+    if (!alreadyMember) {
+      // Membership only ever changes through the crib repository.
+      try {
+        await PayCalRepositories.instance.cribs.addMember(
+          cribId: picked.id,
+          member: member,
+        );
+      } on RepositoryException catch (error) {
+        if (mounted) showAppToast(context, error.message);
+        return null;
+      }
+    }
     return picked;
   }
 
   Future<void> _choose(BuildContext dialogContext, bool split) async {
     final member = _peer!;
-    final landing = await _pickLandingBatch(member);
+    final landing = await _pickLandingCrib(member);
     if (landing == null) return;
     if (!dialogContext.mounted || !mounted) return;
     Navigator.of(dialogContext).pop();
@@ -207,9 +224,9 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
     );
     showQuickAdd(
       context,
-      batchId: landing.id,
+      cribId: landing.id,
       payeeId: split ? null : member.id,
-      splitWithIds: split ? [MockData.meId, member.id] : null,
+      splitWithIds: split ? [_meId, member.id] : null,
       onSaved: () {},
     );
   }
@@ -284,7 +301,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
               showAppToast(context, 'That code matched nobody');
               return;
             }
-            if (member.id == MockData.meId) {
+            if (member.id == _meId) {
               showAppToast(context, 'That is your own code, cheeky!');
               return;
             }

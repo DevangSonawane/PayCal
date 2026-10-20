@@ -6,6 +6,7 @@ import 'package:paycal/core/utils/money.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
 import 'package:paycal/core/widgets/sticker_pill.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/domain/financial_ledger.dart';
 
 /// Equal / exact / percentage split editor. Listens to the expense amount
 /// field and emits the finished shares map through [onChanged] whenever the
@@ -19,6 +20,7 @@ class SplitShareEditor extends StatefulWidget {
     required this.currency,
     required this.initialShares,
     required this.onChanged,
+    required this.payerId,
     this.initialMode = SplitMode.equal,
   });
 
@@ -28,6 +30,7 @@ class SplitShareEditor extends StatefulWidget {
   final Map<String, int> initialShares;
   final SplitMode initialMode;
   final void Function(Map<String, int> shares, bool complete) onChanged;
+  final String payerId;
 
   @override
   State<SplitShareEditor> createState() => _SplitShareEditorState();
@@ -81,14 +84,12 @@ class _SplitShareEditorState extends State<SplitShareEditor> {
     if (total <= 0) return const ({}, false);
     switch (_mode) {
       case SplitMode.equal:
-        final n = widget.members.length;
-        final per = total ~/ n;
-        var remainder = total - per * n;
         return (
-          {
-            for (final m in widget.members)
-              m.id: per + ((remainder-- > 0) ? 1 : 0),
-          },
+          FinancialLedger.equalSplit(
+            totalMinor: total,
+            participantIds: widget.members.map((member) => member.id),
+            payerId: widget.payerId,
+          ),
           true,
         );
       case SplitMode.exact:
@@ -106,16 +107,25 @@ class _SplitShareEditorState extends State<SplitShareEditor> {
         }
         return (shares, complete && sum == total);
       case SplitMode.percent:
-        final shares = <String, int>{};
-        var pctSum = 0.0;
+        final basisPoints = <String, int>{};
         for (final m in widget.members) {
           final raw = _percentControllers()[m.id]!.text.replaceAll('%', '');
           final p = double.tryParse(raw) ?? -1;
-          if (p < 0) return const ({}, false);
-          pctSum += p;
-          shares[m.id] = (total * p / 100).round();
+          if (!p.isFinite || p < 0) return const ({}, false);
+          basisPoints[m.id] = (p * 100).round();
         }
-        return (shares, (pctSum - 100).abs() < 0.5);
+        try {
+          return (
+            FinancialLedger.percentageSplit(
+              totalMinor: total,
+              basisPoints: basisPoints,
+              payerId: widget.payerId,
+            ),
+            true,
+          );
+        } on FinancialValidationException {
+          return const ({}, false);
+        }
     }
   }
 

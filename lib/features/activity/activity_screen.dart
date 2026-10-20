@@ -8,9 +8,9 @@ import 'package:paycal/core/widgets/pop_card.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/sticker_pill.dart';
-import 'package:paycal/features/batches/batch_detail_screen.dart';
+import 'package:paycal/features/cribs/crib_detail_screen.dart';
 import 'package:paycal/core/widgets/wedge_loader.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
 import 'package:paycal/data/models.dart';
 
 class ActivityScreen extends StatefulWidget {
@@ -24,8 +24,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   String _filterAll = 'All';
 
   Iterable<ActivityEvent> get _events {
-    final filtered = MockData.activity
-        .where((e) => _filterAll == 'All' || e.batchName == _filterAll)
+    final filtered = PayCalRepositories.instance.activity.cachedEvents
+        .where((e) => _filterAll == 'All' || e.cribName == _filterAll)
         .toList();
     return filtered;
   }
@@ -38,7 +38,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.sm,
         children: [
-          for (final name in ['All', for (final b in MockData.batches) b.name])
+          for (final name in [
+            'All',
+            for (final b in PayCalRepositories.instance.cribs.cachedCribs)
+              b.name,
+          ])
             StickerPill(
               label: name,
               selected: _filterAll == name,
@@ -55,8 +59,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   void _showEvent(ActivityEvent event) {
-    final batch = MockData.batches
-        .where((b) => b.name == event.batchName)
+    final crib = PayCalRepositories.instance.cribs.cachedCribs
+        .where((b) => b.name == event.cribName)
         .firstOrNull;
     showPopCard<void>(
       context: context,
@@ -79,22 +83,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
           ),
           SizedBox(height: AppSpacing.md),
           Text(
-            '${event.time} · ${event.batchName}',
+            '${event.time} · ${event.cribName}',
             style: AppTypography.caption.copyWith(
               color: AppPalette.current.grey,
             ),
           ),
         ],
       ),
-      footer: batch == null
+      footer: crib == null
           ? null
           : PrimaryButton(
-              label: 'Open ${batch.name}',
+              label: 'Open ${crib.name}',
               onPressed: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => BatchDetailScreen(batch: batch),
+                    builder: (_) => CribDetailScreen(crib: crib),
                   ),
                 );
               },
@@ -220,12 +224,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   (event == _events.first ||
                       _events
                               .toList()[_events.toList().indexOf(event) - 1]
-                              .batchName !=
-                          event.batchName))
+                              .cribName !=
+                          event.cribName))
                 Padding(
                   padding: const EdgeInsets.only(top: 8, bottom: AppSpacing.sm),
                   child: Text(
-                    event.batchName.toUpperCase(),
+                    event.cribName.toUpperCase(),
                     style: AppTypography.caption.copyWith(
                       color: _ActivityPalette.current.pink,
                       fontWeight: FontWeight.w800,

@@ -15,8 +15,10 @@ import 'package:paycal/core/widgets/pop_card.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/secondary_button.dart';
 import 'package:paycal/core/widgets/status_chip.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/member_directory.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
 import 'package:paycal/features/expenses/split_share_editor.dart';
 
 class ExpenseDetailScreen extends StatefulWidget {
@@ -33,18 +35,26 @@ class ExpenseDetailScreen extends StatefulWidget {
 class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   late Expense expense = widget.expense;
 
-  Batch get batch => MockData.batches.firstWhere(
-    (b) => b.id == expense.batchId,
-    orElse: () => MockData.batches.first,
-  );
+  Crib? get crib => MemberDirectory.cribById(expense.cribId);
 
-  void _replace(Expense next) {
-    final i = MockData.expenses.indexOf(widget.expense);
-    if (i >= 0) {
-      MockData.expenses[i] = next;
+  /// The signed-in member.
+  String get _meId => PayCalRepositories.instance.currentUserId;
+
+  /// Only the payer or the author may edit or delete an expense.
+  bool get _canManage =>
+      expense.payerId == _meId || expense.authorId == _meId;
+
+  Future<bool> _replace(Expense next) async {
+    try {
+      await PayCalRepositories.instance.expenses.update(next);
+    } on RepositoryException catch (error) {
+      if (mounted) showAppToast(context, error.message);
+      return false;
     }
+    if (!mounted) return false;
     setState(() => expense = next);
     widget.onDone?.call();
+    return true;
   }
 
   Future<void> _flagProblem() async {
@@ -56,30 +66,36 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       context: context,
       title: 'Flag a problem?',
       body:
-          'Marks this as disputed so ${MockData.memberName(expense.payerId)} knows something is off.',
+          'Marks this as disputed so ${MemberDirectory.nameFor(expense.payerId)} knows something is off.',
       confirmLabel: 'Flag it',
     );
     if (ok == true && mounted) {
-      _replace(
-        Expense(
-          id: expense.id,
-          batchId: expense.batchId,
-          description: expense.description,
-          totalMinor: expense.totalMinor,
-          currency: expense.currency,
-          payerId: expense.payerId,
-          shares: expense.shares,
-          date: expense.date,
-          category: expense.category,
-          disputed: true,
-          unpaid: expense.unpaid,
-        ),
-      );
-      showAppToast(context, 'Flagged — the payer has been notified');
+      try {
+        final updated = await PayCalRepositories.instance.expenses
+            .flagDispute(expense.id);
+        if (!mounted) return;
+        setState(() => expense = updated);
+        widget.onDone?.call();
+        showAppToast(context, 'Flagged — the payer has been notified');
+      } on RepositoryException catch (error) {
+        if (mounted) showAppToast(context, error.message);
+      }
     }
   }
 
   Future<void> _edit() async {
+    final crib = this.crib;
+    if (crib == null) {
+      showAppToast(context, 'This crib is not available any more');
+      return;
+    }
+    // Active members take part in a new split. A member that already has a
+    // share stays visible so the current split stays valid.
+    final participants = [
+      for (final member in crib.activeMembers) member,
+      for (final member in crib.members)
+        if (!member.isActive && expense.shares.containsKey(member.id)) member,
+    ];
     final amount = TextEditingController(
       text: Money.format(expense.totalMinor, expense.currency),
     );
@@ -104,7 +120,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
             AppTextField(label: 'What was it for?', controller: desc),
             SizedBox(height: AppSpacing.md),
             _CategoryPicker(
-              categories: batch.categories,
+              categories: crib.categories,
               selected: category,
               onPicked: (v) => setPopState(() => category = v),
             ),
@@ -118,10 +134,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
             ),
             SizedBox(height: AppSpacing.sm),
             SplitShareEditor(
-              members: batch.members,
+              members: participants,
               amountController: amount,
               currency: expense.currency,
               initialShares: expense.shares,
+              payerId: expense.payerId,
               onChanged: (s, ok) {
                 shares = s;
                 splitComplete = ok;
@@ -132,7 +149,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       ),
       footer: PrimaryButton(
         label: 'Save changes',
-        onPressed: () {
+        onPressed: () async {
           final minor = Money.tryParseToMinor(amount.text);
           if (minor == null || minor <= 0) {
             showAppToast(context, 'Pop in an amount first');
@@ -146,10 +163,10 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
             return;
           }
           Navigator.of(context).pop();
-          _replace(
+          final updated = await _replace(
             Expense(
               id: expense.id,
-              batchId: expense.batchId,
+              cribId: expense.cribId,
               description: desc.text.trim().isEmpty
                   ? expense.description
                   : desc.text.trim(),
@@ -161,9 +178,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
               category: category,
               disputed: expense.disputed,
               unpaid: expense.unpaid,
+              createdById: expense.createdById,
+              version: expense.version,
             ),
           );
-          widget.onDone?.call();
+          if (!updated || !mounted) return;
           showAppToast(context, 'Saved — expense updated');
         },
       ),
@@ -174,12 +193,21 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     final ok = await showConfirmSheet(
       context: context,
       title: 'Delete expense?',
-      body: 'This removes it for everyone in the batch.',
+      body: 'This removes it for everyone in the crib.',
       confirmLabel: 'Delete',
       destructive: true,
     );
     if (ok == true && mounted) {
-      MockData.expenses.remove(widget.expense);
+      try {
+        await PayCalRepositories.instance.expenses.delete(
+          widget.expense.id,
+          expectedVersion: expense.version,
+        );
+      } on RepositoryException catch (error) {
+        if (mounted) showAppToast(context, error.message);
+        return;
+      }
+      if (!mounted) return;
       Navigator.of(context).pop();
       widget.onDone?.call();
       showAppToast(context, 'Gone — expense deleted');
@@ -229,7 +257,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                 'Date',
                 '${expense.date.day}/${expense.date.month}/${expense.date.year}',
               ),
-              _row('Paid by', MockData.memberName(expense.payerId)),
+              _row('Paid by', MemberDirectory.nameFor(expense.payerId)),
               _row('Category', expense.category),
               _row(
                 'Split',
@@ -242,26 +270,28 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: _row2(
-                    entry.key == MockData.meId
+                    entry.key == _meId
                         ? 'You'
-                        : MockData.memberName(entry.key),
+                        : MemberDirectory.nameFor(entry.key),
                     Money.format(entry.value, expense.currency),
                   ),
                 ),
               const SizedBox(height: AppSpacing.lg),
               SecondaryButton(label: 'Flag a problem', onPressed: _flagProblem),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(label: 'Edit', onPressed: _edit),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: SecondaryButton(label: 'Delete', onPressed: _delete),
-                  ),
-                ],
-              ),
+              if (_canManage) ...[
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(label: 'Edit', onPressed: _edit),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: SecondaryButton(label: 'Delete', onPressed: _delete),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: AppSpacing.xxl),
               Text(
                 'History',

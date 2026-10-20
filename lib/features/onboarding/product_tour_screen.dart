@@ -24,7 +24,7 @@ class _ProductTourScreenState extends State<ProductTourScreen> {
     _TourSlide(
       eyebrow: 'ONE HOME FOR SHARED MONEY',
       title: 'Keep every shared expense in one place.',
-      body: 'Make a batch for your flat, trip, couple, or crew. Everyone sees the same running picture.',
+      body: 'Make a crib for your flat, trip, couple, or crew. Everyone sees the same running picture.',
       accent: AppColors.purple,
       icon: Icons.folder_shared_outlined,
     ),
@@ -224,7 +224,7 @@ class _PhonePreview extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: page == Icons.folder_shared_outlined
-              ? const _BatchesPreview()
+              ? const _CribsPreview()
               : page == Icons.call_split_rounded
               ? const _SplitPreview()
               : const _SettlePreview(),
@@ -254,19 +254,19 @@ class _PreviewHeader extends StatelessWidget {
   );
 }
 
-class _BatchesPreview extends StatelessWidget {
-  const _BatchesPreview();
+class _CribsPreview extends StatelessWidget {
+  const _CribsPreview();
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const _PreviewHeader('Your batches', Icons.folder_shared_outlined),
+      const _PreviewHeader('Your cribs', Icons.folder_shared_outlined),
       const SizedBox(height: 13),
       const _PreviewRow('Our flat', 'Rent · groceries · bills', '₹1,240 owed'),
       const SizedBox(height: 9),
       const _PreviewRow('Goa trip', 'Stay · food · travel', 'All square'),
       const Spacer(),
-      _PreviewPill(label: '+ Create a batch', color: AppColors.purple),
+      _PreviewPill(label: '+ Create a crib', color: AppColors.purple),
     ],
   );
 }

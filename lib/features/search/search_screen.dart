@@ -5,13 +5,14 @@ import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
 import 'package:paycal/core/widgets/avatar.dart';
 import 'package:paycal/core/widgets/money_text.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/member_directory.dart';
 import 'package:paycal/data/models.dart';
-import 'package:paycal/features/batches/batch_detail_screen.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/features/cribs/crib_detail_screen.dart';
 import 'package:paycal/features/expenses/expense_detail_screen.dart';
 import 'package:paycal/features/expenses/quick_add_sheet.dart';
 
-/// Full-page search across batches, expenses and people.
+/// Full-page search across cribs, expenses and people.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -34,25 +35,27 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final batches = _text.isEmpty
-        ? <Batch>[]
-        : MockData.batches.where((b) => _matches(b.name)).toList();
+    final cribs = _text.isEmpty
+        ? <Crib>[]
+        : PayCalRepositories.instance.cribs.cachedCribs
+              .where((b) => _matches(b.name))
+              .toList();
     final expenses = _text.isEmpty
         ? <Expense>[]
-        : MockData.expenses
+        : PayCalRepositories.instance.expenses.cachedExpenses
               .where(
                 (e) =>
                     _matches(e.description) ||
                     _matches(e.category) ||
-                    _matches(MockData.memberName(e.payerId)),
+                    _matches(MemberDirectory.nameFor(e.payerId)),
               )
               .toList();
     final people = <Member>[];
     if (_text.isNotEmpty) {
       final seen = <String>{};
-      for (final b in MockData.batches) {
+      for (final b in PayCalRepositories.instance.cribs.cachedCribs) {
         for (final m in b.members) {
-          if (m.id == MockData.meId ||
+          if (m.id == PayCalRepositories.instance.currentUserId ||
               seen.contains(m.id) ||
               !_matches(m.name)) {
             continue;
@@ -120,7 +123,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 0,
               ),
               child: AppTextField(
-                label: 'Batches, expenses, people',
+                label: 'Cribs, expenses, people',
                 hint: 'Try "groceries" or "Asha"',
                 controller: _query,
                 onChanged: (v) => setState(() => _text = v),
@@ -148,7 +151,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                   if (_text.isNotEmpty &&
-                      batches.isEmpty &&
+                      cribs.isEmpty &&
                       expenses.isEmpty &&
                       people.isEmpty)
                     Padding(
@@ -160,18 +163,18 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
                     ),
-                  if (batches.isNotEmpty) ...[
-                    _section('Batches'),
-                    for (final b in batches)
+                  if (cribs.isNotEmpty) ...[
+                    _section('Cribs'),
+                    for (final b in cribs)
                       _tile(
                         icon: Icons.groups_rounded,
                         title: b.name,
-                        subtitle: '${b.members.length} members · ${b.currency}',
+                        subtitle: '${b.activeMembers.length} members · ${b.currency}',
                         onTap: () {
                           Navigator.of(context).pop();
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => BatchDetailScreen(batch: b),
+                              builder: (_) => CribDetailScreen(crib: b),
                             ),
                           );
                         },
@@ -184,7 +187,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         icon: Icons.receipt_long_rounded,
                         title: e.description,
                         subtitle:
-                            '${MockData.memberName(e.payerId)} · ${e.category}',
+                            '${MemberDirectory.nameFor(e.payerId)} · ${e.category}',
                         trailing: MoneyText(
                           amount: e.totalMinor,
                           currency: e.currency,

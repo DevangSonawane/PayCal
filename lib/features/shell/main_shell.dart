@@ -3,7 +3,7 @@ import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/utils/deep_link.dart';
 import 'package:paycal/core/widgets/solid_bottom_nav.dart';
 import 'package:paycal/features/activity/activity_screen.dart';
-import 'package:paycal/features/batches/batches_screen.dart';
+import 'package:paycal/features/cribs/cribs_screen.dart';
 import 'package:paycal/features/home/home_screen.dart';
 import 'package:paycal/features/profile/profile_screen.dart';
 
@@ -36,7 +36,7 @@ class _MainShellState extends State<MainShell> {
                   onDestinationSelected: (i) => setState(() => _index = i),
                   showNav: false,
                 ),
-                const BatchesScreen(),
+                const CribsScreen(),
                 const ActivityScreen(),
                 const ProfileScreen(),
               ],

@@ -21,7 +21,7 @@ class RoleInfo {
     this.icon,
     this.categories,
     this.defaultSize,
-    this.batchHint,
+    this.cribHint,
   );
   final String id;
   final String title;
@@ -29,7 +29,7 @@ class RoleInfo {
   final IconData icon;
   final List<String> categories;
   final int defaultSize;
-  final String batchHint;
+  final String cribHint;
 }
 
 const roles = [
@@ -389,7 +389,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     );
     return _shell(
       question: 'What will you split?',
-      support: 'Pick at least one. It sets up your first batch.',
+      support: 'Pick at least one. It sets up your first crib.',
       body: Wrap(
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.sm,

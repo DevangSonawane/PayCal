@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
@@ -14,9 +16,12 @@ import 'package:paycal/core/widgets/money_text.dart';
 import 'package:paycal/core/widgets/option_tile.dart';
 import 'package:paycal/core/widgets/pop_card.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/member_directory.dart';
 import 'package:paycal/data/models.dart';
-import 'package:paycal/domain/balance_engine.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
+import 'package:paycal/domain/financial_ledger.dart';
+import 'package:paycal/domain/recurring_scheduler.dart';
 import 'package:paycal/features/expenses/expense_detail_screen.dart';
 import 'package:paycal/features/expenses/split_share_editor.dart';
 import 'package:paycal/features/settlements/settle_up_sheet.dart';
@@ -25,44 +30,59 @@ class _DPalette {
   static AppPalette get current => AppPalette.current;
 }
 
-/// A batch reads as a shared payment conversation: payments from the current
+/// A crib reads as a shared payment conversation: payments from the current
 /// user are on the right and payments from everyone else are on the left.
-class BatchDetailScreen extends StatefulWidget {
-  const BatchDetailScreen({super.key, required this.batch});
+class CribDetailScreen extends StatefulWidget {
+  const CribDetailScreen({super.key, required this.crib});
 
-  final Batch batch;
+  final Crib crib;
 
   @override
-  State<BatchDetailScreen> createState() => _BatchDetailScreenState();
+  State<CribDetailScreen> createState() => _CribDetailScreenState();
 }
 
-class _BatchDetailScreenState extends State<BatchDetailScreen> {
+class _CribDetailScreenState extends State<CribDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _postDueRecurringPayments();
+    unawaited(_postDueRecurringPayments());
   }
 
   int _net(List<Expense> expenses) =>
-      BalanceEngine.nets(
-        expenses
-            .map(
-              (e) => ExpenseInput(
-                totalMinor: e.totalMinor,
-                payerId: e.payerId,
-                shares: e.shares,
-              ),
-            )
-            .toList(),
-        widget.batch.members.map((m) => m.id).toList(),
-      )[MockData.meId] ??
+      FinancialLedger.balances(
+        crib: _crib,
+        expenses: expenses,
+        settlements: PayCalRepositories.instance.settlements.cachedSettlements
+            .where((settlement) => settlement.cribId == _crib.id),
+      )[PayCalRepositories.instance.currentUserId] ??
       0;
+
+  /// The signed-in member.
+  String get _meId => PayCalRepositories.instance.currentUserId;
+
+  /// Whether the signed-in member owns the crib.
+  ///
+  /// The repositories enforce this on every owner-only operation. The screen
+  /// only uses it to show the owner actions to the owner, so a member does
+  /// not tap a button that is bound to fail.
+  bool get _isOwner => _crib.ownerId == _meId;
+
+  /// The crib as the repositories know it. Membership changes made somewhere
+  /// else show up here without a restart.
+  Crib get _crib =>
+      MemberDirectory.cribById(_cribId) ?? widget.crib;
+
+  /// The id of the crib this screen shows.
+  String get _cribId => widget.crib.id;
+
+  /// Members that can still take part in the crib.
+  List<Member> get _activeMembers => _crib.activeMembers;
 
   @override
   Widget build(BuildContext context) {
     final expenses =
-        MockData.expenses
-            .where((expense) => expense.batchId == widget.batch.id)
+        PayCalRepositories.instance.expenses.cachedExpenses
+            .where((expense) => expense.cribId == _crib.id)
             .toList()
           ..sort((a, b) => a.date.compareTo(b.date));
     final net = _net(expenses);
@@ -77,12 +97,12 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             child: Column(
               children: [
                 _Header(
-                  batch: widget.batch,
+                  crib: _crib,
                   onBack: () => Navigator.of(context).maybePop(),
-                  onDetails: () => _showGroupDetails(context, widget.batch),
+                  onDetails: () => _showGroupDetails(context, _crib),
                   onSettleUp: () => showSettleUp(
                     context,
-                    widget.batch,
+                    _crib,
                     onRecorded: () => setState(() {}),
                   ),
                 ),
@@ -95,7 +115,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                       MediaQuery.of(context).padding.bottom + 100,
                     ),
                     children: [
-                      _HeroCard(batch: widget.batch, net: net),
+                      _HeroCard(crib: _crib, net: net),
                       SizedBox(height: 22),
                       Row(
                         children: [
@@ -127,7 +147,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                               ))
                             _DateLabel(date: expenses[i].date),
                           _PaymentBubble(
-                            batch: widget.batch,
+                            crib: _crib,
                             expense: expenses[i],
                             onExpenseChanged: () => setState(() {}),
                           ),
@@ -172,25 +192,118 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       first.month == second.month &&
       first.day == second.day;
 
-  void _showGroupDetails(BuildContext context, Batch batch) {
-    final recurring = MockData.recurringPayments
-        .where((r) => r.batchId == batch.id)
+  /// Lets the owner choose the member who pays a recurring transfer.
+  ///
+  /// A paused schedule waits for an active member, and a running schedule can
+  /// hand the paying over to another member.
+  void _showAssignPayerSheet(RecurringPayment schedule) {
+    final members = _crib.activeMembers;
+    if (members.isEmpty) {
+      showAppToast(context, 'This crib has no active members left');
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _DPalette.current.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Who pays this transfer?',
+                style: AppTypography.headline.copyWith(
+                  color: _DPalette.current.ink,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: AppSpacing.md),
+              Text(
+                schedule.isPaused
+                    ? 'The schedule is paused. Pick the member who takes over.'
+                    : 'The next occurrences are paid by the member you pick.',
+                style: AppTypography.caption.copyWith(
+                  color: _DPalette.current.grey,
+                ),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              for (final member in members)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    member.id == _meId ? 'You' : member.name,
+                    style: AppTypography.label.copyWith(
+                      color: _DPalette.current.ink,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  onTap: () async {
+                    try {
+                      await PayCalRepositories.instance.recurring
+                          .assignPayer(schedule.id, member.id);
+                    } on RepositoryException catch (error) {
+                      if (sheetContext.mounted) {
+                        showAppToast(sheetContext, error.message);
+                      }
+                      return;
+                    }
+                    if (!mounted || !sheetContext.mounted) return;
+                    setState(() {});
+                    Navigator.of(sheetContext).pop();
+                    showAppToast(
+                      context,
+                      member.id == _meId
+                          ? 'You are paying this transfer'
+                          : '${member.name} is paying this transfer',
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The next due date of a schedule, in its own timezone.
+  String _nextDueLabel(RecurringPayment schedule) {
+    if (schedule.isPaused) return 'paused';
+    try {
+      final due = RecurringScheduler.nextDueDateAfter(
+        schedule: schedule,
+        now: DateTime.now(),
+      );
+      return '${due.day}/${due.month}';
+    } on RecurrenceException {
+      return '-';
+    }
+  }
+
+  void _showGroupDetails(BuildContext context, Crib crib) {
+    final recurring = PayCalRepositories.instance.recurring.cachedSchedules
+        .where((r) => r.cribId == crib.id && r.active)
         .toList()
         .reversed
         .toList();
+    final members = crib.activeMembers;
     showAppBottomSheet<void>(
       context: context,
-      title: batch.name,
+      title: crib.name,
       builder: (sheetContext) => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${batch.members.length} members',
+            '${members.length} members',
             style: AppTypography.body.copyWith(color: _DPalette.current.grey),
           ),
           SizedBox(height: AppSpacing.lg),
-          ...batch.members.map(
+          ...members.map(
             (member) => Padding(
               padding: EdgeInsets.only(bottom: AppSpacing.md),
               child: Row(
@@ -199,7 +312,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
-                      member.id == MockData.meId ? 'You' : member.name,
+                      member.id == _meId ? 'You' : member.name,
                       style: AppTypography.label.copyWith(
                         color: _DPalette.current.ink,
                         fontWeight: FontWeight.w800,
@@ -218,7 +331,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                         border: Border.all(color: _DPalette.current.ink),
                       ),
                       child: Text(
-                        'Admin',
+                        'Owner',
                         style: AppTypography.caption.copyWith(
                           color: AppColors.ink,
                           fontWeight: FontWeight.w800,
@@ -265,24 +378,71 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${r.description} → ${MockData.memberName(r.recipientId)}',
+                              '${r.description} → ${MemberDirectory.nameFor(r.recipientId)}',
                               style: AppTypography.label.copyWith(
                                 color: _DPalette.current.ink,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                             Text(
-                              '${Money.format(r.amountMinor, r.currency)} · every ${r.frequency == RecurringFrequency.monthly ? 'month' : 'year'} · next ${r.nextDueAt.day}/${r.nextDueAt.month}',
+                              '${Money.format(r.amountMinor, r.currency)} · every ${r.frequency == RecurringFrequency.monthly ? 'month' : 'year'} · next ${_nextDueLabel(r)}',
                               style: AppTypography.caption.copyWith(
                                 color: _DPalette.current.grey,
+                              ),
+                            ),
+                            Text(
+                              r.isPaused
+                                  ? 'Paused — waiting for a payer'
+                                  : 'Paid by ${MemberDirectory.nameFor(r.payerId!)}',
+                              style: AppTypography.caption.copyWith(
+                                color: r.isPaused
+                                    ? _DPalette.current.grey
+                                    : _DPalette.current.ink,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() => MockData.recurringPayments.remove(r));
+                      if (_isOwner)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _showAssignPayerSheet(r);
+                          },
+                          child: Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: _DPalette.current.card,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: _DPalette.current.ink,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.person_pin_circle_outlined,
+                              size: 18,
+                              color: _DPalette.current.ink,
+                            ),
+                          ),
+                        ),
+                      if (_isOwner) SizedBox(width: AppSpacing.sm),
+                      if (_isOwner)
+                        GestureDetector(
+                          onTap: () async {
+                            try {
+                              await PayCalRepositories.instance.recurring.cancel(
+                                r.id,
+                              );
+                          } on RepositoryException catch (error) {
+                            if (sheetContext.mounted) {
+                              showAppToast(sheetContext, error.message);
+                            }
+                            return;
+                          }
+                          if (!mounted || !sheetContext.mounted) return;
+                          setState(() {});
                           showAppToast(
                             sheetContext,
                             'Recurring transfer cancelled',
@@ -352,16 +512,17 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               _showExpenseSheet(splitEqually: true);
             },
           ),
-          SizedBox(height: AppSpacing.md),
-          _ActionOption(
-            icon: Icons.autorenew_rounded,
-            title: 'Set up recurring transfer',
-            subtitle: 'Send money to a member on a schedule',
-            onTap: () {
-              Navigator.of(dialogContext).pop();
-              _showRecurringTransferSheet();
-            },
-          ),
+          if (_isOwner) SizedBox(height: AppSpacing.md),
+          if (_isOwner)
+            _ActionOption(
+              icon: Icons.autorenew_rounded,
+              title: 'Set up recurring transfer',
+              subtitle: 'Send money to a member on a schedule',
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                _showRecurringTransferSheet();
+              },
+            ),
         ],
       ),
     );
@@ -383,9 +544,14 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
 
   void _showAddMoneySheet() {
     final amount = TextEditingController();
-    var recipientId = widget.batch.members
-        .firstWhere((member) => member.id != MockData.meId)
-        .id;
+    final recipients = _activeMembers
+        .where((member) => member.id != _meId)
+        .toList();
+    if (recipients.isEmpty) {
+      showAppToast(context, 'Add someone to the crib first');
+      return;
+    }
+    var recipientId = recipients.first.id;
     _showFormDialog(
       title: 'Add money',
       builder: (dialogContext) => StatefulBuilder(
@@ -403,10 +569,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             _sheetLabel('Paid to'),
             _SelectField<String>(
               value: recipientId,
-              options: {
-                for (final member in widget.batch.members)
-                  if (member.id != MockData.meId) member.id: member.name,
-              },
+              options: {for (final member in recipients) member.id: member.name},
               dialogTitle: 'Paid to',
               onChanged: (value) => setSheetState(() => recipientId = value),
             ),
@@ -415,21 +578,23 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       ),
       footer: PrimaryButton(
         label: 'Add money',
-        onPressed: () {
+        onPressed: () async {
           final minor = Money.tryParseToMinor(amount.text);
           if (minor == null || minor <= 0) {
             showAppToast(context, 'Pop in an amount first');
             return;
           }
-          final recipient = widget.batch.members.firstWhere(
+          final recipient = _activeMembers.firstWhere(
             (member) => member.id == recipientId,
           );
-          _addEntry(
+          final added = await _addEntry(
             description: 'Money to ${recipient.name}',
             amount: minor,
-            shares: {MockData.meId: minor},
+            shares: {_meId: minor},
             category: 'other',
           );
+          if (!added) return;
+          if (!mounted) return;
           Navigator.of(context).pop();
           showQuirkyConfirm(context, 'All set — money added!');
         },
@@ -440,7 +605,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   void _showExpenseSheet({required bool splitEqually}) {
     final amount = TextEditingController();
     final description = TextEditingController();
-    var category = widget.batch.categories.first;
+    var category = _crib.categories.first;
     Map<String, int>? shares;
     var splitComplete = false;
     _showFormDialog(
@@ -466,17 +631,18 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             _sheetLabel('Category'),
             _SelectField<String>(
               value: category,
-              options: {for (final item in widget.batch.categories) item: item},
+              options: {for (final item in _crib.categories) item: item},
               dialogTitle: 'Category',
               onChanged: (value) => setSheetState(() => category = value),
             ),
             SizedBox(height: AppSpacing.lg),
             _sheetLabel('Split'),
             SplitShareEditor(
-              members: widget.batch.members,
+              members: _activeMembers,
               amountController: amount,
-              currency: widget.batch.currency,
+              currency: _crib.currency,
               initialShares: {},
+              payerId: _meId,
               onChanged: (s, ok) {
                 shares = s;
                 splitComplete = ok;
@@ -487,7 +653,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       ),
       footer: PrimaryButton(
         label: splitEqually ? 'Split bill' : 'Add expense',
-        onPressed: () {
+        onPressed: () async {
           final minor = Money.tryParseToMinor(amount.text);
           if (minor == null || minor <= 0) {
             showAppToast(context, 'Pop in an amount first');
@@ -509,14 +675,16 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             amount: minor,
             shares: shares ?? _equalShares(minor),
             category: category,
-          );
-          Navigator.of(context).pop();
-          showQuirkyConfirm(
-            context,
-            splitEqually
-                ? 'Bill split — nice one!'
-                : 'Expense added — all set!',
-          );
+          ).then((added) {
+            if (!added || !mounted) return;
+            Navigator.of(context).pop();
+            showQuirkyConfirm(
+              context,
+              splitEqually
+                  ? 'Bill split — nice one!'
+                  : 'Expense added — all set!',
+            );
+          });
         },
       ),
     );
@@ -525,12 +693,17 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   void _showRecurringTransferSheet() {
     final amount = TextEditingController();
     final description = TextEditingController();
-    var category = widget.batch.categories.first;
+    final recipients = _activeMembers
+        .where((member) => member.id != _meId)
+        .toList();
+    if (recipients.isEmpty) {
+      showAppToast(context, 'Add someone to the crib first');
+      return;
+    }
+    var category = _crib.categories.first;
     var frequency = RecurringFrequency.monthly;
     var dueDate = DateTime.now();
-    var recipientId = widget.batch.members
-        .firstWhere((member) => member.id != MockData.meId)
-        .id;
+    var recipientId = recipients.first.id;
 
     _showFormDialog(
       title: 'Set up recurring transfer',
@@ -555,10 +728,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             _sheetLabel('Send to'),
             _SelectField<String>(
               value: recipientId,
-              options: {
-                for (final member in widget.batch.members)
-                  if (member.id != MockData.meId) member.id: member.name,
-              },
+              options: {for (final member in recipients) member.id: member.name},
               dialogTitle: 'Send to',
               onChanged: (value) => setSheetState(() => recipientId = value),
             ),
@@ -602,7 +772,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       ),
       footer: PrimaryButton(
         label: 'Save recurring transfer',
-        onPressed: () {
+        onPressed: () async {
           final minor = Money.tryParseToMinor(amount.text);
           if (minor == null || minor <= 0) {
             showAppToast(context, 'Pop in an amount first');
@@ -612,20 +782,29 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             showAppToast(context, 'Add a short description');
             return;
           }
-          MockData.recurringPayments.add(
-            RecurringPayment(
-              id: 'r${MockData.recurringPayments.length + 1}',
-              batchId: widget.batch.id,
-              description: description.text.trim(),
-              amountMinor: minor,
-              currency: widget.batch.currency,
-              category: category,
-              frequency: frequency,
-              nextDueAt: dueDate,
-              recipientId: recipientId,
-            ),
-          );
-          setState(_postDueRecurringPayments);
+          try {
+            await PayCalRepositories.instance.recurring.create(
+              RecurringPayment(
+                id: 'r${DateTime.now().millisecondsSinceEpoch}',
+                cribId: _crib.id,
+                description: description.text.trim(),
+                amountMinor: minor,
+                currency: _crib.currency,
+                category: category,
+                frequency: frequency,
+                recipientId: recipientId,
+                createdById: _meId,
+                startDate: dueDate,
+                timeZone: RecurringScheduler.deviceTimeZone(),
+              ),
+            );
+          } on RepositoryException catch (error) {
+            if (mounted) showAppToast(context, error.message);
+            return;
+          }
+          if (!mounted) return;
+          await _postDueRecurringPayments();
+          if (!mounted) return;
           Navigator.of(context).pop();
           showAppToast(context, 'Recurring transfer saved');
         },
@@ -633,46 +812,29 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     );
   }
 
-  void _postDueRecurringPayments() {
-    final now = DateTime.now();
-    for (final payment in MockData.recurringPayments.where(
-      (item) => item.batchId == widget.batch.id,
-    )) {
-      while (!payment.nextDueAt.isAfter(now)) {
-        MockData.expenses.add(
-          Expense(
-            id: 'rec-${payment.id}-${payment.nextDueAt.millisecondsSinceEpoch}',
-            batchId: payment.batchId,
-            description:
-                '${payment.description} to ${MockData.memberName(payment.recipientId)}',
-            totalMinor: payment.amountMinor,
-            currency: payment.currency,
-            payerId: MockData.meId,
-            shares: {MockData.meId: payment.amountMinor},
-            date: payment.nextDueAt,
-            category: payment.category,
-          ),
-        );
-        payment.nextDueAt = _nextOccurrence(
-          payment.nextDueAt,
-          payment.frequency,
-        );
-      }
+  /// Catches up recurring transfers that are due.
+  ///
+  /// Generation happens when a crib is opened. There is no background job, so
+  /// nothing is generated while the app is closed.
+  Future<void> _postDueRecurringPayments() async {
+    try {
+      await PayCalRepositories.instance.recurring.generateDue(
+        cribId: _crib.id,
+        now: DateTime.now(),
+      );
+    } on RepositoryException catch (_) {
+      // A member who may not trigger a catch-up simply sees no new entries.
+      return;
     }
+    if (mounted) setState(() {});
   }
 
-  DateTime _nextOccurrence(DateTime date, RecurringFrequency frequency) =>
-      frequency == RecurringFrequency.monthly
-      ? DateTime(date.year, date.month + 1, date.day)
-      : DateTime(date.year + 1, date.month, date.day);
-
   Map<String, int> _equalShares(int amount) {
-    final share = amount ~/ widget.batch.members.length;
-    final remainder = amount % widget.batch.members.length;
-    return {
-      for (var index = 0; index < widget.batch.members.length; index++)
-        widget.batch.members[index].id: share + (index < remainder ? 1 : 0),
-    };
+    return FinancialLedger.equalSplit(
+      totalMinor: amount,
+      participantIds: _activeMembers.map((member) => member.id),
+      payerId: _meId,
+    );
   }
 
   Widget _sheetLabel(String text) => Padding(
@@ -687,27 +849,35 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     ),
   );
 
-  void _addEntry({
+  /// Records a payment through the expense repository so every entry is
+  /// validated, versioned and recorded in the activity feed.
+  Future<bool> _addEntry({
     required String description,
     required int amount,
     required Map<String, int> shares,
     required String category,
-  }) {
-    setState(() {
-      MockData.expenses.add(
+  }) async {
+    try {
+      await PayCalRepositories.instance.expenses.create(
         Expense(
-          id: 'e${MockData.expenses.length + 1}',
-          batchId: widget.batch.id,
+          id: 'e${DateTime.now().millisecondsSinceEpoch}',
+          cribId: _crib.id,
           description: description,
           totalMinor: amount,
-          currency: widget.batch.currency,
-          payerId: MockData.meId,
+          currency: _crib.currency,
+          payerId: _meId,
           shares: shares,
           date: DateTime.now(),
           category: category,
+          createdById: _meId,
         ),
       );
-    });
+    } on RepositoryException catch (error) {
+      if (mounted) showAppToast(context, error.message);
+      return false;
+    }
+    if (mounted) setState(() {});
+    return true;
   }
 }
 
@@ -756,12 +926,12 @@ class _RoundIconButton extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header({
-    required this.batch,
+    required this.crib,
     required this.onBack,
     required this.onDetails,
     required this.onSettleUp,
   });
-  final Batch batch;
+  final Crib crib;
   final VoidCallback onBack;
   final VoidCallback onDetails;
   final VoidCallback onSettleUp;
@@ -778,7 +948,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                batch.name,
+                crib.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.title.copyWith(
@@ -788,7 +958,7 @@ class _Header extends StatelessWidget {
                 ),
               ),
               Text(
-                '${batch.members.length} people',
+                '${crib.activeMembers.length} people',
                 style: AppTypography.caption.copyWith(
                   color: _DPalette.current.grey,
                 ),
@@ -796,7 +966,7 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        PopupMenuButton<_BatchMenuAction>(
+        PopupMenuButton<_CribMenuAction>(
           offset: Offset(0, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -804,15 +974,15 @@ class _Header extends StatelessWidget {
           ),
           color: AppPalette.current.card,
           onSelected: (action) {
-            if (action == _BatchMenuAction.groupDetails) {
+            if (action == _CribMenuAction.groupDetails) {
               onDetails();
-            } else if (action == _BatchMenuAction.settleUp) {
+            } else if (action == _CribMenuAction.settleUp) {
               onSettleUp();
             }
           },
           itemBuilder: (context) => [
             PopupMenuItem(
-              value: _BatchMenuAction.groupDetails,
+              value: _CribMenuAction.groupDetails,
               child: Text(
                 'View group details',
                 style: AppTypography.body.copyWith(
@@ -821,7 +991,7 @@ class _Header extends StatelessWidget {
               ),
             ),
             PopupMenuItem(
-              value: _BatchMenuAction.settleUp,
+              value: _CribMenuAction.settleUp,
               child: Text(
                 'Settle up',
                 style: AppTypography.body.copyWith(
@@ -852,8 +1022,8 @@ class _Header extends StatelessWidget {
 
 /// Signature geometric card: white top, lime bottom, purple + black wedge.
 class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.batch, required this.net});
-  final Batch batch;
+  const _HeroCard({required this.crib, required this.net});
+  final Crib crib;
   final int net;
 
   @override
@@ -888,7 +1058,7 @@ class _HeroCard extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      batch.name,
+                      crib.name,
                       style: AppTypography.title.copyWith(
                         color: _DPalette.current.ink,
                         fontWeight: FontWeight.w800,
@@ -921,7 +1091,7 @@ class _HeroCard extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: MoneyText(
                             amount: net.abs(),
-                            currency: batch.currency,
+                            currency: crib.currency,
                             style: AppTypography.displayAmount.copyWith(
                               color: AppColors.ink,
                               fontSize: 28,
@@ -1058,7 +1228,7 @@ class _EmptyPayments extends StatelessWidget {
         Icon(Icons.receipt_long_outlined, color: _DPalette.current.grey),
         SizedBox(height: 8),
         Text(
-          'No payments in this batch yet.',
+          'No payments in this crib yet.',
           style: AppTypography.caption.copyWith(color: _DPalette.current.grey),
         ),
       ],
@@ -1276,7 +1446,7 @@ class _PickerTile extends StatelessWidget {
   );
 }
 
-enum _BatchMenuAction { groupDetails, settleUp }
+enum _CribMenuAction { groupDetails, settleUp }
 
 class _DateLabel extends StatelessWidget {
   const _DateLabel({required this.date});
@@ -1319,22 +1489,21 @@ class _DateLabel extends StatelessWidget {
 
 class _PaymentBubble extends StatelessWidget {
   const _PaymentBubble({
-    required this.batch,
+    required this.crib,
     required this.expense,
     this.onExpenseChanged,
   });
 
-  final Batch batch;
+  final Crib crib;
   final Expense expense;
   final VoidCallback? onExpenseChanged;
 
   @override
   Widget build(BuildContext context) {
-    final isMine = expense.payerId == MockData.meId;
-    final payer = batch.members.firstWhere(
-      (member) => member.id == expense.payerId,
-    );
-    final myShare = expense.shares[MockData.meId] ?? 0;
+    final meId = PayCalRepositories.instance.currentUserId;
+    final isMine = expense.payerId == meId;
+    final payer = crib.memberById(expense.payerId);
+    final myShare = expense.shares[meId] ?? 0;
     final foreground = isMine ? AppColors.ink : _DPalette.current.ink;
 
     final bubble = GestureDetector(
@@ -1414,8 +1583,8 @@ class _PaymentBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMine) ...[
-            Avatar(initials: payer.initials, size: 30),
-            const SizedBox(width: AppSpacing.sm),
+            Avatar(initials: payer?.initials ?? '?', size: 30),
+            SizedBox(width: AppSpacing.sm),
           ],
           Flexible(child: bubble),
         ],

@@ -5,7 +5,7 @@ import 'package:paycal/core/utils/app_haptics.dart';
 
 const _navItems = [
   (Icons.home_outlined, Icons.home_rounded, 'Home'),
-  (Icons.groups_outlined, Icons.groups_rounded, 'Batches'),
+  (Icons.groups_outlined, Icons.groups_rounded, 'Cribs'),
   (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Activity'),
   (Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
 ];

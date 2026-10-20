@@ -11,8 +11,11 @@ import 'package:paycal/core/widgets/app_toast.dart';
 import 'package:paycal/core/widgets/quirky_confirm.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/sticker_pill.dart';
-import 'package:paycal/data/mock_data.dart';
+import 'package:paycal/data/member_directory.dart';
 import 'package:paycal/data/models.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
+import 'package:paycal/domain/financial_ledger.dart';
 
 const _types = [
   'Food',
@@ -25,16 +28,16 @@ const _types = [
   'Other',
 ];
 
-/// Expense entry flow: pick the batch, pick what kind, drop the amount —
+/// Expense entry flow: pick the crib, pick what kind, drop the amount —
 /// added straight through, no chooser dialog in between.
 ///
 /// [payeeId] records the expense as money sent to that person (they receive
 /// the whole amount). [splitWithIds] splits equally among exactly those
-/// member ids instead of the whole batch. [onSaved] fires after the expense
+/// member ids instead of the whole crib. [onSaved] fires after the expense
 /// is added to the data.
 Future<void> showQuickAdd(
   BuildContext context, {
-  String? batchId,
+  String? cribId,
   String? payeeId,
   List<String>? splitWithIds,
   VoidCallback? onSaved,
@@ -43,7 +46,7 @@ Future<void> showQuickAdd(
     context: context,
     title: 'Add expense',
     builder: (_) => _QuickAddForm(
-      initialBatchId: batchId,
+      initialCribId: cribId,
       payeeId: payeeId,
       initialSplitWithIds: splitWithIds,
       onSaved: onSaved,
@@ -53,12 +56,12 @@ Future<void> showQuickAdd(
 
 class _QuickAddForm extends StatefulWidget {
   const _QuickAddForm({
-    this.initialBatchId,
+    this.initialCribId,
     this.payeeId,
     this.initialSplitWithIds,
     this.onSaved,
   });
-  final String? initialBatchId;
+  final String? initialCribId;
   final String? payeeId;
   final List<String>? initialSplitWithIds;
   final VoidCallback? onSaved;
@@ -70,24 +73,32 @@ class _QuickAddForm extends StatefulWidget {
 class _QuickAddFormState extends State<_QuickAddForm> {
   final _amount = TextEditingController();
   final _desc = TextEditingController();
-  String? _batchId;
+  String? _cribId;
   String? _type;
 
   Member? get payee {
     final id = widget.payeeId;
     if (id == null) return null;
-    for (final b in MockData.batches) {
-      for (final m in b.members) {
-        if (m.id == id) return m;
-      }
-    }
-    return null;
+    return MemberDirectory.memberById(id);
   }
+
+  /// The cribs the signed-in member can add to.
+  List<Crib> get _cribs => PayCalRepositories.instance.cribs.cachedCribs;
+
+  /// The signed-in member.
+  String get _meId => PayCalRepositories.instance.currentUserId;
 
   @override
   void initState() {
     super.initState();
-    _batchId = widget.initialBatchId ?? MockData.batches.first.id;
+    final meId = PayCalRepositories.instance.currentUserId;
+    final mine = [
+      for (final crib in _cribs)
+        if (crib.memberById(meId)?.isActive ?? false) crib,
+    ];
+    _cribId =
+        widget.initialCribId ??
+        (mine.isNotEmpty ? mine.first.id : (_cribs.isEmpty ? null : _cribs.first.id));
   }
 
   @override
@@ -97,7 +108,7 @@ class _QuickAddFormState extends State<_QuickAddForm> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final minor = Money.tryParseToMinor(_amount.text);
     if (minor == null || minor <= 0) {
       showAppToast(context, 'Pop in an amount first');
@@ -107,58 +118,66 @@ class _QuickAddFormState extends State<_QuickAddForm> {
       showAppToast(context, 'Pick what kind of expense this is');
       return;
     }
-    final batch = MockData.batches.firstWhere(
-      (b) => b.id == _batchId,
-      orElse: () => MockData.batches.first,
-    );
+    final crib = MemberDirectory.cribById(_cribId ?? '');
+    if (crib == null) {
+      showAppToast(context, 'Pick a crib first');
+      return;
+    }
     final payee = this.payee;
     final splitIds =
-        widget.initialSplitWithIds ?? [for (final m in batch.members) m.id];
+        widget.initialSplitWithIds ?? [for (final m in crib.activeMembers) m.id];
     final shares = payee != null
         ? {payee.id: minor}
         : _equalShares(splitIds, minor);
     final desc = _desc.text.trim().isEmpty
         ? (payee == null ? '$_type expense' : 'Sent to ${payee.name}')
         : _desc.text.trim();
-    MockData.expenses.add(
-      Expense(
-        id: 'e${DateTime.now().millisecondsSinceEpoch}',
-        batchId: batch.id,
-        description: desc,
-        totalMinor: minor,
-        currency: batch.currency,
-        payerId: MockData.meId,
-        shares: shares,
-        date: DateTime.now(),
-        category: _type!,
-      ),
-    );
+    try {
+      await PayCalRepositories.instance.expenses.create(
+        Expense(
+          id: 'e${DateTime.now().millisecondsSinceEpoch}',
+          cribId: crib.id,
+          description: desc,
+          totalMinor: minor,
+          currency: crib.currency,
+          payerId: _meId,
+          shares: shares,
+          date: DateTime.now(),
+          category: _type!,
+          createdById: _meId,
+        ),
+      );
+    } on RepositoryException catch (error) {
+      if (mounted) showAppToast(context, error.message);
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pop();
     showQuirkyConfirm(
       context,
       payee == null
-          ? 'All set — added to ${batch.name}'
+          ? 'All set — added to ${crib.name}'
           : 'Recorded for ${payee.name}',
     );
     widget.onSaved?.call();
   }
 
-  Map<String, int> _equalShares(List<String> ids, int minor) {
-    final n = ids.length;
-    final per = minor ~/ n;
-    var remainder = minor - per * n;
-    return {for (final id in ids) id: per + ((remainder-- > 0) ? 1 : 0)};
-  }
+  Map<String, int> _equalShares(List<String> ids, int minor) =>
+      FinancialLedger.equalSplit(
+        totalMinor: minor,
+        participantIds: ids,
+        payerId: _meId,
+      );
 
   @override
   Widget build(BuildContext context) {
-    final batch = MockData.batches.firstWhere(
-      (b) => b.id == _batchId,
-      orElse: () => MockData.batches.first,
-    );
-    final splitIds =
-        widget.initialSplitWithIds ?? [for (final m in batch.members) m.id];
-    final payeeNames = [for (final id in splitIds) MockData.memberName(id)];
+    final crib = MemberDirectory.cribById(_cribId ?? '');
+    final splitIds = crib == null
+        ? const <String>[]
+        : (widget.initialSplitWithIds ?? [
+            for (final m in crib.activeMembers) m.id,
+          ]);
+    final payeeNames = [for (final id in splitIds) MemberDirectory.nameFor(id)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -230,7 +249,7 @@ class _QuickAddFormState extends State<_QuickAddForm> {
             ),
           ),
         Text(
-          'Which batch?',
+          'Which crib?',
           style: AppTypography.label.copyWith(
             color: AppPalette.current.ink,
             fontWeight: FontWeight.w800,
@@ -241,11 +260,11 @@ class _QuickAddFormState extends State<_QuickAddForm> {
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
           children: [
-            for (final b in MockData.batches)
+            for (final b in _cribs)
               StickerPill(
                 label: b.name,
-                selected: _batchId == b.id,
-                onTap: () => setState(() => _batchId = b.id),
+                selected: _cribId == b.id,
+                onTap: () => setState(() => _cribId = b.id),
               ),
           ],
         ),

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paycal/features/auth/create_account_screen.dart';
 import 'package:paycal/features/auth/sign_in_screen.dart';
 import 'package:paycal/features/onboarding/invite_screen.dart';
-import 'package:paycal/features/onboarding/first_batch_screen.dart';
+import 'package:paycal/features/onboarding/first_crib_screen.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 import 'package:paycal/features/onboarding/onboarding_flow.dart';
 import 'package:paycal/features/onboarding/product_tour_screen.dart';
@@ -80,14 +80,14 @@ void main() {
     expect(find.text('How do you identify?'), findsOneWidget);
   });
 
-  testWidgets('first batch + invite render', (tester) async {
+  testWidgets('first crib + invite render', (tester) async {
     final draft = OnboardingDraft(
       role: 'flat',
       splitTypes: const ['rent', 'food'],
     );
-    await tester.pumpWidget(MaterialApp(home: FirstBatchScreen(draft: draft)));
+    await tester.pumpWidget(MaterialApp(home: FirstCribScreen(draft: draft)));
     await tester.pumpAndSettle();
-    expect(find.text('Your first batch'), findsOneWidget);
+    expect(find.text('Your first crib'), findsOneWidget);
     expect(find.text('Skip for now'), findsOneWidget);
 
     await tester.pumpWidget(const MaterialApp(home: InviteScreen()));
