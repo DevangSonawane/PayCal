@@ -19,8 +19,16 @@ class RepositoryException implements Exception {
 
 abstract interface class AuthRepository {
   AuthUser? get currentUser;
-  Future<AuthUser> signIn({required String email, required String displayName});
+  Future<AuthUser?> restoreSession();
+  Future<AuthUser> signIn({required String email, required String password});
+  Future<AuthUser?> signUp({
+    required String email,
+    required String password,
+    required String displayName,
+  });
   Future<void> signOut();
+  Future<void> deleteAccount();
+  Future<void> resetPassword({required String email});
   Future<AuthUser> updateProfile({required String name, required String email});
 }
 
@@ -56,17 +64,11 @@ abstract interface class CribRepository {
   Future<void> delete(String id, {int? expectedVersion});
 
   /// Adds a member. Owner only.
-  Future<Crib> addMember({
-    required String cribId,
-    required Member member,
-  });
+  Future<Crib> addMember({required String cribId, required Member member});
 
   /// Removes a member. The member stays in the crib history so earlier
   /// expenses and settlements keep validating. Owner only.
-  Future<Crib> removeMember({
-    required String cribId,
-    required String memberId,
-  });
+  Future<Crib> removeMember({required String cribId, required String memberId});
 }
 
 abstract interface class ExpenseRepository {

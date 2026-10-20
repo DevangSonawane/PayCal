@@ -533,7 +533,28 @@ class ProfileScreen extends StatelessWidget {
                       destructive: true,
                     );
                     if (ok == true && context.mounted) {
-                      showAppToast(context, 'Account deletion requested');
+                      try {
+                        await PayCalRepositories.instance.auth.deleteAccount();
+                        await AppSettings.instance.clearIdentity();
+                        if (!context.mounted) return;
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (_) => const WelcomeScreen(),
+                          ),
+                          (r) => false,
+                        );
+                      } on RepositoryException catch (error) {
+                        if (context.mounted) {
+                          showAppToast(context, error.message);
+                        }
+                      } catch (_) {
+                        if (context.mounted) {
+                          showAppToast(
+                            context,
+                            'Unable to delete the account.',
+                          );
+                        }
+                      }
                     }
                   },
                   child: Padding(
@@ -556,8 +577,12 @@ class ProfileScreen extends StatelessWidget {
                       confirmLabel: 'Log out',
                     );
                     if (ok == true && context.mounted) {
+                      await PayCalRepositories.instance.auth.signOut();
+                      if (!context.mounted) return;
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => WelcomeScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const WelcomeScreen(),
+                        ),
                         (r) => false,
                       );
                     }

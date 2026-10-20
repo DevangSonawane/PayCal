@@ -3,6 +3,19 @@ class AppConfig {
   static const int minimumAge = 18;
   static const String defaultCurrency = 'INR';
 
+  /// Public Supabase connection values supplied at build time, for example:
+  /// `flutter run --dart-define-from-file=.env.json`.
+  ///
+  /// Only a publishable (or legacy anon) key belongs in a mobile build. Never
+  /// put a service-role key in this app or in source control.
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const String supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+  );
+
+  static bool get hasSupabaseConfiguration =>
+      supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
+
   /// How long a shared invitation stays valid.
   ///
   /// Seven days is the product default for v1. The expiry is stored on the

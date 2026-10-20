@@ -1,0 +1,3 @@
+-- Settlement mutation RPCs belong in this migration. It is intentionally kept
+-- unapplied until the full atomic create/confirm/cancel implementation and
+-- its RLS tests are committed together.

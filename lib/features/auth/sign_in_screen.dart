@@ -10,6 +10,8 @@ import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/quiet_text_button.dart';
 import 'package:paycal/core/widgets/secondary_button.dart';
 import 'package:paycal/features/shell/main_shell.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -30,17 +32,58 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  void _signIn() {
+  Future<void> _signIn() async {
     if (!(_form.currentState?.validate() ?? false)) return;
     setState(() => _busy = true);
-    Future.delayed(Duration(milliseconds: 600), () {
+    try {
+      await PayCalRepositories.instance.auth.signIn(
+        email: _email.text,
+        password: _password.text,
+      );
+      await PayCalRepositories.instance.hydrate();
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => MainShell()),
+        MaterialPageRoute(builder: (_) => const MainShell()),
         (r) => false,
       );
-    });
+    } on RepositoryException catch (error) {
+      if (mounted) {
+        _showError(error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        _showError('Unable to sign in. Check your connection and try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
+
+  Future<void> _resetPassword() async {
+    final error = Validators.email(_email.text);
+    if (error != null) return _showError('Enter your email first.');
+    setState(() => _busy = true);
+    try {
+      await PayCalRepositories.instance.auth.resetPassword(email: _email.text);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset email sent.')),
+        );
+      }
+    } on RepositoryException catch (error) {
+      if (mounted) {
+        _showError(error.message);
+      }
+    } catch (_) {
+      if (mounted) _showError('Unable to send reset email.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _showError(String message) =>
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
 
   @override
   Widget build(BuildContext context) {
@@ -121,10 +164,11 @@ class _SignInScreenState extends State<SignInScreen> {
                       width: 20,
                       height: 20,
                     ),
-                    onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const MainShell()),
-                      (r) => false,
-                    ),
+                    onPressed: _busy
+                        ? null
+                        : () => _showError(
+                            'Google sign-in is not configured yet.',
+                          ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   AppTextField(
@@ -146,7 +190,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     alignment: Alignment.centerRight,
                     child: QuietTextButton(
                       label: 'Forgot password?',
-                      onPressed: () {},
+                      onPressed: _busy ? null : _resetPassword,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),

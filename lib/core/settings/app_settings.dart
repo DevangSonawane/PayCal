@@ -103,5 +103,12 @@ class AppSettings extends ChangeNotifier {
     unawaitedSave();
   }
 
+  Future<void> clearIdentity() async {
+    userName = 'You';
+    userEmail = '';
+    await save();
+    notifyListeners();
+  }
+
   Future<void> unawaitedSave() => save();
 }

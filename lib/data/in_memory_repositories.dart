@@ -1,8 +1,12 @@
 import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/data/repositories.dart';
+import 'package:paycal/data/supabase_auth_repository.dart';
+import 'package:paycal/data/supabase_crib_repository.dart';
+import 'package:paycal/data/supabase_expense_repository.dart';
 import 'package:paycal/domain/financial_ledger.dart';
 import 'package:paycal/domain/recurring_scheduler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
 
 import 'dart:math';
 
@@ -56,22 +60,61 @@ class InMemoryStore {
 }
 
 class PayCalRepositories {
-  PayCalRepositories._(this.store)
-    : auth = InMemoryAuthRepository(store),
-      cribs = InMemoryCribRepository(store),
-      expenses = InMemoryExpenseRepository(store),
-      settlements = InMemorySettlementRepository(store),
-      activity = InMemoryActivityRepository(store),
-      invitations = InMemoryInvitationRepository(store),
-      recurring = InMemoryRecurringPaymentRepository(store);
+  PayCalRepositories._({
+    required this.store,
+    required this.auth,
+    required this.cribs,
+    required this.expenses,
+    required this.settlements,
+    required this.activity,
+    required this.invitations,
+    required this.recurring,
+  });
+
+  factory PayCalRepositories._inMemory(InMemoryStore store) =>
+      PayCalRepositories._(
+        store: store,
+        auth: InMemoryAuthRepository(store),
+        cribs: InMemoryCribRepository(store),
+        expenses: InMemoryExpenseRepository(store),
+        settlements: InMemorySettlementRepository(store),
+        activity: InMemoryActivityRepository(store),
+        invitations: InMemoryInvitationRepository(store),
+        recurring: InMemoryRecurringPaymentRepository(store),
+      );
 
   /// Builds a repository set around an explicit store. Tests use this to get
   /// an isolated world.
   factory PayCalRepositories.forStore(InMemoryStore store) =>
-      PayCalRepositories._(store);
+      PayCalRepositories._inMemory(store);
 
   factory PayCalRepositories.prototype() =>
-      PayCalRepositories._(InMemoryStore.prototype());
+      PayCalRepositories._inMemory(InMemoryStore.prototype());
+
+  /// The production bundle.  The in-memory store stays empty solely to keep
+  /// the existing test seam available; no production read or write uses it.
+  factory PayCalRepositories.supabase(SupabaseClient client) {
+    final emptyStore = InMemoryStore(
+      cribs: <Crib>[],
+      expenses: <Expense>[],
+      settlements: <Settlement>[],
+      activity: <ActivityEvent>[],
+      currentUser: null,
+    );
+    return PayCalRepositories._(
+      store: emptyStore,
+      auth: SupabaseAuthRepository(client),
+      cribs: SupabaseCribRepository(client),
+      expenses: SupabaseExpenseRepository(client),
+      // These repositories will be moved to their RPC-backed counterparts in
+      // the next backend slice.  Keeping them empty is safer than presenting
+      // prototype financial data to a real signed-in account.
+      settlements: InMemorySettlementRepository(emptyStore),
+      activity: InMemoryActivityRepository(emptyStore),
+      invitations: InMemoryInvitationRepository(emptyStore),
+      recurring: InMemoryRecurringPaymentRepository(emptyStore),
+    );
+  }
 
   static PayCalRepositories _instance = PayCalRepositories.prototype();
 
@@ -82,6 +125,15 @@ class PayCalRepositories {
   /// Swaps the repository set. Used by tests to run against an isolated
   /// in-memory store.
   static set instance(PayCalRepositories value) => _instance = value;
+
+  /// Loads the remote account's cribs and their expenses after an auth
+  /// transition. Widgets consume the repository caches synchronously.
+  Future<void> hydrate() async {
+    final cribsForUser = await cribs.list();
+    await Future.wait([
+      for (final crib in cribsForUser) expenses.list(cribId: crib.id),
+    ]);
+  }
 
   /// The id of the signed-in member. Empty when nobody is signed in.
   String get currentUserId => auth.currentUser?.id ?? '';
@@ -103,19 +155,22 @@ class InMemoryAuthRepository implements AuthRepository {
   AuthUser? get currentUser => _store.currentUser;
 
   @override
+  Future<AuthUser?> restoreSession() async => currentUser;
+
+  @override
   Future<AuthUser> signIn({
     required String email,
-    required String displayName,
+    required String password,
   }) async {
-    if (!email.contains('@') || displayName.trim().isEmpty) {
+    if (!email.contains('@') || password.isEmpty) {
       throw const RepositoryException(
         RepositoryErrorCode.validation,
-        'A display name and valid email are required.',
+        'A valid email and password are required.',
       );
     }
     final user = AuthUser(
       id: _store.currentUser?.id ?? 'me',
-      name: displayName.trim(),
+      name: _store.currentUser?.name ?? email.split('@').first,
       email: email.trim(),
     );
     _store.currentUser = user;
@@ -126,10 +181,23 @@ class InMemoryAuthRepository implements AuthRepository {
   Future<void> signOut() async => _store.currentUser = null;
 
   @override
+  Future<void> deleteAccount() => signOut();
+
+  @override
+  Future<AuthUser?> signUp({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async => signIn(email: email, password: password);
+
+  @override
+  Future<void> resetPassword({required String email}) async {}
+
+  @override
   Future<AuthUser> updateProfile({
     required String name,
     required String email,
-  }) => signIn(email: email, displayName: name);
+  }) => signIn(email: email, password: 'local-test-password');
 }
 
 class InMemoryCribRepository implements CribRepository {
@@ -151,6 +219,7 @@ class InMemoryCribRepository implements CribRepository {
     _requireUser(_store);
     return _memberCrib(_store, id);
   }
+
   @override
   Future<Crib> create(Crib crib) async {
     final actor = _requireUser(_store);
@@ -165,11 +234,7 @@ class InMemoryCribRepository implements CribRepository {
       Member(id: actor.id, name: actor.name, role: MemberRole.owner),
       for (final member in crib.members)
         if (member.id != actor.id)
-          Member(
-            id: member.id,
-            name: member.name,
-            role: MemberRole.member,
-          ),
+          Member(id: member.id, name: member.name, role: MemberRole.member),
     ];
     final created = crib.copyWith(ownerId: owner, members: members);
     _store.cribs.add(created);
@@ -335,6 +400,7 @@ class InMemoryExpenseRepository implements ExpenseRepository {
     _requireUser(_store);
     return _memberExpense(_store, id);
   }
+
   @override
   Future<Expense> create(Expense expense) async {
     final actor = _requireUser(_store);
@@ -378,7 +444,8 @@ class InMemoryExpenseRepository implements ExpenseRepository {
     if (existing.currency != expense.currency) {
       _unauthorized('The currency of an expense cannot be changed.');
     }
-    final financialChanged = existing.totalMinor != expense.totalMinor ||
+    final financialChanged =
+        existing.totalMinor != expense.totalMinor ||
         existing.payerId != expense.payerId ||
         !FinancialLedger.sameShares(existing.shares, expense.shares);
     if (financialChanged) {
@@ -411,7 +478,10 @@ class InMemoryExpenseRepository implements ExpenseRepository {
     final existing = _store.expenses[index];
     if (existing.disputed) return existing;
     _requireActiveMember(_store, existing.cribId, actor.id);
-    final updated = existing.copyWith(disputed: true, version: existing.version + 1);
+    final updated = existing.copyWith(
+      disputed: true,
+      version: existing.version + 1,
+    );
     _store.expenses[index] = updated;
     _recordActivity(
       _store,
@@ -516,6 +586,7 @@ class InMemorySettlementRepository implements SettlementRepository {
       _store.settlements.where((item) => item.cribId == cribId),
     );
   }
+
   @override
   Future<Settlement> create(Settlement settlement) async {
     final actor = _requireUser(_store);
@@ -977,10 +1048,7 @@ class InMemoryInvitationRepository implements InvitationRepository {
         Member(id: actor.id, name: actor.name, role: MemberRole.member),
     ];
     final index = _store.cribs.indexWhere((item) => item.id == crib.id);
-    final updated = crib.copyWith(
-      members: members,
-      version: crib.version + 1,
-    );
+    final updated = crib.copyWith(members: members, version: crib.version + 1);
     _store.cribs[index] = updated;
     final inviteIndex = _store.invitations.indexWhere(
       (item) => item.id == token,
@@ -1124,9 +1192,7 @@ Crib _memberCrib(InMemoryStore store, String cribId) =>
           (crib) =>
               crib.id == cribId &&
               !crib.isDeleted &&
-              crib.members.any(
-                (member) => member.id == store.currentUser?.id,
-              ),
+              crib.members.any((member) => member.id == store.currentUser?.id),
         )
         .firstOrNull ??
     (_notFound('Crib'));
@@ -1170,11 +1236,7 @@ bool _canManageExpense(InMemoryStore store, Expense expense, String actorId) {
   return _ownerIdOf(_cribFor(store, expense.cribId)) == actorId;
 }
 
-void _requireActiveMember(
-  InMemoryStore store,
-  String cribId,
-  String memberId,
-) {
+void _requireActiveMember(InMemoryStore store, String cribId, String memberId) {
   final member = _cribFor(
     store,
     cribId,

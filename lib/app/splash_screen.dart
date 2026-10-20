@@ -6,6 +6,8 @@ import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/wedge_loader.dart';
 import 'package:paycal/features/onboarding/welcome_screen.dart';
+import 'package:paycal/features/shell/main_shell.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,10 +19,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 900), () {
+    Future.delayed(const Duration(milliseconds: 900), () async {
+      if (!mounted) return;
+      final user = await PayCalRepositories.instance.auth.restoreSession();
+      if (user != null) {
+        try {
+          await PayCalRepositories.instance.hydrate();
+        } catch (_) {
+          // The shell remains usable and exposes retry paths if the network
+          // is temporarily unavailable during launch.
+        }
+      }
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        MaterialPageRoute(
+          builder: (_) =>
+              user == null ? const WelcomeScreen() : const MainShell(),
+        ),
       );
     });
   }
