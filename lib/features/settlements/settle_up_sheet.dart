@@ -180,38 +180,82 @@ Future<void> showSettleUp(
           ),
     footer: mine.isEmpty
         ? null
-        : PrimaryButton(
-            label: 'Record my transfer${mine.length == 1 ? '' : 's'}',
-            onPressed: () async {
-              // One key per request: a replay of the same request returns the
-              // original settlement, a later request records a new transfer.
-              final requestId = DateTime.now().microsecondsSinceEpoch;
-              try {
-                for (final t in mine) {
-                  await PayCalRepositories.instance.settlements.create(
-                    Settlement(
-                      id: 'e${DateTime.now().millisecondsSinceEpoch}-sq-${t.toId}',
-                      cribId: crib.id,
-                      currency: crib.currency,
-                      fromMemberId: t.fromId,
-                      toMemberId: t.toId,
-                      amountMinor: t.amountMinor,
-                      status: SettlementStatus.selfManaged,
-                      createdAt: DateTime.now(),
-                      idempotencyKey:
-                          '${crib.id}:${t.fromId}:${t.toId}:${t.amountMinor}:$requestId',
-                    ),
-                  );
-                }
-              } on RepositoryException catch (error) {
-                if (context.mounted) showAppToast(context, error.message);
-                return;
-              }
-              if (!context.mounted) return;
-              Navigator.of(context).pop();
-              onRecorded?.call();
-              showQuirkyConfirm(context, 'All square!');
+        : _RecordTransfersButton(
+            transfers: mine,
+            crib: crib,
+            onRecorded: onRecorded,
+            onError: (error) {
+              if (context.mounted) showAppToast(context, error.message);
             },
           ),
   );
+}
+
+/// Records the transfers of the signed-in member.
+///
+/// The button ignores a second tap while it is recording, because every tap
+/// builds a new request id and would otherwise record the transfer twice.
+class _RecordTransfersButton extends StatefulWidget {
+  const _RecordTransfersButton({
+    required this.transfers,
+    required this.crib,
+    required this.onRecorded,
+    required this.onError,
+  });
+
+  final List<SettlementTransfer> transfers;
+  final Crib crib;
+  final VoidCallback? onRecorded;
+  final void Function(RepositoryException error) onError;
+
+  @override
+  State<_RecordTransfersButton> createState() =>
+      _RecordTransfersButtonState();
+}
+
+class _RecordTransfersButtonState extends State<_RecordTransfersButton> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) => PrimaryButton(
+        label: _busy
+            ? 'Recording…'
+            : 'Record my transfer${widget.transfers.length == 1 ? '' : 's'}',
+        loading: _busy,
+        onPressed: _busy ? null : _record,
+      );
+
+  Future<void> _record() async {
+    // One key per request: a replay of the same request returns the
+    // original settlement, a later request records a new transfer.
+    final requestId = DateTime.now().microsecondsSinceEpoch;
+    setState(() => _busy = true);
+    try {
+      for (final t in widget.transfers) {
+        await PayCalRepositories.instance.settlements.create(
+          Settlement(
+            id: 'e${DateTime.now().millisecondsSinceEpoch}-sq-${t.toId}',
+            cribId: widget.crib.id,
+            currency: widget.crib.currency,
+            fromMemberId: t.fromId,
+            toMemberId: t.toId,
+            amountMinor: t.amountMinor,
+            status: SettlementStatus.selfManaged,
+            createdAt: DateTime.now(),
+            idempotencyKey:
+                '${widget.crib.id}:${t.fromId}:${t.toId}:${t.amountMinor}:$requestId',
+          ),
+        );
+      }
+    } on RepositoryException catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      widget.onError(error);
+      return;
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    widget.onRecorded?.call();
+    showQuirkyConfirm(context, 'All square!');
+  }
 }

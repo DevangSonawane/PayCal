@@ -185,7 +185,11 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
                     ? 'You both are members'
                     : 'Only the crib owner can add them',
                 selected: banner == 'first' && b == _cribs.first,
-                onTap: () => Navigator.of(context).pop(b),
+                // Adding somebody to a crib is an owner operation, so a
+                // member is not offered a crib they would have to own.
+                onTap: shared.any((s) => s.id == b.id) || b.ownerId == _meId
+                    ? () => Navigator.of(context).pop(b)
+                    : null,
               ),
             ),
         ],

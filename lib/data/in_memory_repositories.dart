@@ -185,6 +185,9 @@ class InMemoryCribRepository implements CribRepository {
       _notFound('Crib');
     }
     final existing = _store.cribs[index];
+    if (existing.isDeleted) {
+      _notFound('Crib');
+    }
     _requireOwner(existing, actor.id);
     if (existing.version != crib.version) _conflict('Crib version');
     if (!_sameMembership(existing.members, crib.members)) {
@@ -215,13 +218,19 @@ class InMemoryCribRepository implements CribRepository {
   @override
   Future<void> delete(String id, {int? expectedVersion}) async {
     final actor = _requireUser(_store);
-    final crib = _crib(id);
+    final crib = _liveCrib(_store, id);
     _requireOwner(crib, actor.id);
     if (expectedVersion != null && expectedVersion != crib.version) {
       _conflict('Crib version');
     }
-    _store.cribs.remove(crib);
-    // Preserve financial history: do not erase expenses or settlements.
+    // The crib keeps its row, so the expenses, the settlements and the
+    // activity of it still point at something that exists. The members lose
+    // access to it, the history stays complete.
+    final index = _store.cribs.indexWhere((item) => item.id == crib.id);
+    _store.cribs[index] = crib.copyWith(
+      deletedAt: DateTime.now(),
+      version: crib.version + 1,
+    );
     _recordActivity(_store, 'crib_deleted', crib, id);
   }
 
@@ -231,7 +240,7 @@ class InMemoryCribRepository implements CribRepository {
     required Member member,
   }) async {
     final actor = _requireUser(_store);
-    final crib = _crib(cribId);
+    final crib = _liveCrib(_store, cribId);
     _requireOwner(crib, actor.id);
     if (member.id == crib.ownerId) {
       _conflict('Member');
@@ -259,7 +268,7 @@ class InMemoryCribRepository implements CribRepository {
     required String memberId,
   }) async {
     final actor = _requireUser(_store);
-    final crib = _crib(cribId);
+    final crib = _liveCrib(_store, cribId);
     _requireOwner(crib, actor.id);
     if (memberId == crib.ownerId) {
       _unauthorized('The crib owner cannot be removed.');
@@ -292,10 +301,6 @@ class InMemoryCribRepository implements CribRepository {
     }
     return updated;
   }
-
-  Crib _crib(String id) =>
-      _store.cribs.where((item) => item.id == id).firstOrNull ??
-      (_notFound('Crib'));
 
   bool _sameMembership(List<Member> a, List<Member> b) {
     if (a.length != b.length) return false;
@@ -362,8 +367,10 @@ class InMemoryExpenseRepository implements ExpenseRepository {
     if (existing.version != expense.version) {
       _conflict('Expense version');
     }
-    if (actor.id != existing.payerId && actor.id != existing.authorId) {
-      _unauthorized('Only the payer or the author may edit this expense.');
+    if (!_canManageExpense(_store, existing, actor.id)) {
+      _unauthorized(
+        'Only the payer, the author or the crib owner may edit this expense.',
+      );
     }
     if (existing.payerId != expense.payerId) {
       _unauthorized('The payer cannot be changed.');
@@ -419,8 +426,10 @@ class InMemoryExpenseRepository implements ExpenseRepository {
   Future<void> delete(String id, {int? expectedVersion}) async {
     final actor = _requireUser(_store);
     final expense = _expense(id);
-    if (actor.id != expense.payerId && actor.id != expense.authorId) {
-      _unauthorized('Only the payer or the author may delete this expense.');
+    if (!_canManageExpense(_store, expense, actor.id)) {
+      _unauthorized(
+        'Only the payer, the author or the crib owner may delete this expense.',
+      );
     }
     if (expectedVersion != null && expectedVersion != expense.version) {
       _conflict('Expense version');
@@ -703,6 +712,48 @@ class InMemoryRecurringPaymentRepository implements RecurringPaymentRepository {
     _store.schedules.add(created);
     _recordActivity(_store, 'recurring_created', crib, created.id);
     return created;
+  }
+
+  @override
+  Future<RecurringPayment> update(RecurringPayment schedule) async {
+    final actor = _requireUser(_store);
+    final index = _store.schedules.indexWhere((item) => item.id == schedule.id);
+    if (index < 0) {
+      _notFound('Recurring schedule');
+    }
+    final existing = _store.schedules[index];
+    final crib = _cribFor(_store, existing.cribId);
+    _requireOwner(crib, actor.id);
+    if (!existing.active) {
+      throw const RepositoryException(
+        RepositoryErrorCode.conflict,
+        'This recurring transfer was cancelled.',
+      );
+    }
+    if (schedule.timeZone.trim().isEmpty) {
+      throw const RepositoryException(
+        RepositoryErrorCode.validation,
+        'A timezone is required.',
+      );
+    }
+    if (!RecurringScheduler.isKnownTimeZone(schedule.timeZone)) {
+      throw RepositoryException(
+        RepositoryErrorCode.validation,
+        'Unknown timezone "${schedule.timeZone}".',
+      );
+    }
+    // The payer stays the member it is, and it has to be an active member.
+    final payerId = schedule.payerId ?? existing.payerId;
+    if (payerId != null && !_isActiveMember(crib, payerId)) {
+      throw const RepositoryException(
+        RepositoryErrorCode.validation,
+        'The payer of a recurring transfer must be an active crib member.',
+      );
+    }
+    final updated = schedule.copyWith(payerId: payerId);
+    _store.schedules[index] = updated;
+    _recordActivity(_store, 'recurring_updated', crib, schedule.id);
+    return updated;
   }
 
   @override
@@ -990,6 +1041,19 @@ Crib _cribFor(InMemoryStore store, String cribId) =>
     store.cribs.where((crib) => crib.id == cribId).firstOrNull ??
     (_notFound('Crib'));
 
+/// A crib that is not deleted.
+///
+/// A deleted crib keeps its row for the history, but it is gone for the
+/// members: it cannot be changed, deleted again, or have its membership
+/// touched.
+Crib _liveCrib(InMemoryStore store, String cribId) {
+  final crib = _cribFor(store, cribId);
+  if (crib.isDeleted) {
+    _notFound('Crib');
+  }
+  return crib;
+}
+
 /// Whether [memberId] is an active member of [crib].
 bool _isActiveMember(Crib crib, String memberId) {
   final member = crib.memberById(memberId);
@@ -1044,7 +1108,9 @@ Set<String> _memberCribIds(InMemoryStore store) {
   if (user == null) return <String>{};
   return store.cribs
       .where(
-        (crib) => crib.members.any((member) => member.id == user.id),
+        (crib) =>
+            !crib.isDeleted &&
+            crib.members.any((member) => member.id == user.id),
       )
       .map((crib) => crib.id)
       .toSet();
@@ -1057,6 +1123,7 @@ Crib _memberCrib(InMemoryStore store, String cribId) =>
         .where(
           (crib) =>
               crib.id == cribId &&
+              !crib.isDeleted &&
               crib.members.any(
                 (member) => member.id == store.currentUser?.id,
               ),
@@ -1077,12 +1144,30 @@ Expense _memberExpense(InMemoryStore store, String id) {
   return expense;
 }
 
+/// The member that owns a crib.
+///
+/// The owner id is the source of truth. The fallback to the first member with
+/// the owner role only covers a crib whose owner id is missing, which the
+/// repository cannot produce.
+String? _ownerIdOf(Crib crib) =>
+    crib.ownerId ??
+    crib.members.where((member) => member.isAdmin).firstOrNull?.id;
+
 void _requireOwner(Crib crib, String actorId) {
-  final ownerId = crib.ownerId ??
-      crib.members.where((member) => member.isAdmin).firstOrNull?.id;
+  final ownerId = _ownerIdOf(crib);
   if (ownerId == null || ownerId != actorId) {
     _unauthorized('Only the crib owner can perform this action.');
   }
+}
+
+/// Whether the actor may change an expense.
+///
+/// The payer and the author may always change their own expense. The Crib
+/// Owner may change any expense of their own crib, because the owner manages
+/// the whole crib.
+bool _canManageExpense(InMemoryStore store, Expense expense, String actorId) {
+  if (expense.payerId == actorId || expense.authorId == actorId) return true;
+  return _ownerIdOf(_cribFor(store, expense.cribId)) == actorId;
 }
 
 void _requireActiveMember(

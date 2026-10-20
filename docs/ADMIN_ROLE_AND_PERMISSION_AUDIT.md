@@ -53,7 +53,9 @@ test · **Partial** = enforced, but the UI or a rule is missing ·
 | O7 | Revoke an invitation | `InvitationRepository.revoke` | `_requireOwner` | invite screen | `invitations_test.dart`, `owner_permissions_test.dart` | **Implemented** |
 | O8 | Create a recurring transfer | `RecurringPaymentRepository.create` | `_requireOwner` + creator is the actor | crib detail (owner only) | `recurring_test.dart`, `recurring_pause_test.dart` | **Implemented** |
 | O9 | Cancel a recurring transfer | `RecurringPaymentRepository.cancel` | `_requireOwner` | crib detail (owner only) | `recurring_pause_test.dart`, `owner_permissions_test.dart` | **Implemented** |
-| O10 | **Assign the payer of a recurring transfer** | `RecurringPaymentRepository.assignPayer` | `_requireOwner`; the assignee has to be an active member | crib detail → payer button | `recurring_pause_test.dart`, `owner_permissions_test.dart` | **Implemented (new in 2B)** |
+| O10 | **Assign the payer of a recurring transfer** | `RecurringPaymentRepository.assignPayer` | `_requireOwner`; the assignee has to be an active member | group details → payer button | `recurring_pause_test.dart`, `owner_permissions_test.dart` | **Implemented** |
+| O10b | **Edit a recurring transfer** | `RecurringPaymentRepository.update` | `_requireOwner`; the generated occurrences stay | group details → edit button | `recurring_pause_test.dart` | **Implemented** |
+| O10c | **Edit or delete any expense of the crib** | `ExpenseRepository.update` / `delete` | `_requireOwner` for the owner, creator or payer for everybody else | expense detail screen | `expense_permissions_test.dart`, `ui_flows_test.dart` | **Implemented** |
 | O11 | Delete a Crib | `CribRepository.delete` | `_requireOwner` + version conflict | crib edit sheet (owner only) | `crib_operations_test.dart`, `owner_permissions_test.dart`, `owner_ui_gating_test.dart` | **Implemented** |
 | O12 | Edit the membership through a Crib update | `CribRepository.update` | the membership list is rejected | n/a | `membership_test.dart`, `owner_permissions_test.dart` | **Implemented** |
 
@@ -66,7 +68,7 @@ test · **Partial** = enforced, but the UI or a rule is missing ·
 | M3 | Read the settlements and the balances | `SettlementRepository.list` | `cribId` is mandatory | `repository_isolation_test.dart` | **Implemented** |
 | M4 | Read the activity | `ActivityRepository.list` / `cachedEvents` | scoped to the cribs of the caller | `repository_isolation_test.dart` | **Implemented** |
 | M5 | Create an expense | `ExpenseRepository.create` | active member + the payer is the actor | `expense_permissions_test.dart` | **Implemented** |
-| M6 | Edit / delete an expense | `ExpenseRepository.update` / `delete` | the creator or the payer | `expense_permissions_test.dart` | **Implemented** |
+| M6 | Edit / delete an expense | `ExpenseRepository.update` / `delete` | the creator, the payer **or the Crib Owner** | `expense_permissions_test.dart` | **Implemented** (owner added 2026-10-20) |
 | M7 | Flag a dispute | `ExpenseRepository.flagDispute` | any active member; the money never moves | `expense_permissions_test.dart` | **Implemented** |
 | M8 | Record a settlement | `SettlementRepository.create` | the sender is the actor; the amount may not exceed the pairwise debt | `settlements_test.dart`, `settlement_pairwise_debt_test.dart` | **Implemented** |
 | M9 | Confirm a pending settlement | `SettlementRepository.updateStatus` | the recipient only | `settlements_test.dart` | **Implemented** — but there is no UI that creates a pending settlement (F-H8) |

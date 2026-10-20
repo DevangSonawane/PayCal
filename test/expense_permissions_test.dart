@@ -201,4 +201,128 @@ void main() {
       ),
     );
   });
+
+  group('the crib owner manages every expense of the crib', () {
+    test('the owner may edit the expense of another member', () async {
+      final world = TestHarness(
+        expenses: [
+          Expense(
+            id: 'e1',
+            cribId: 'c1',
+            description: 'Groceries',
+            totalMinor: 125000,
+            currency: 'INR',
+            payerId: 'a',
+            shares: {'me': 62500, 'a': 62500},
+            date: DateTime(2026),
+            category: 'groceries',
+            createdById: 'a',
+          ),
+        ],
+      );
+      // "me" owns the crib.
+      final updated = await world.repositories.expenses.update(
+        (await world.repositories.expenses.getById('e1')).copyWith(
+          description: 'Weekly groceries',
+        ),
+      );
+
+      expect(updated.description, 'Weekly groceries');
+    });
+
+    test('the owner may delete the expense of another member', () async {
+      final world = TestHarness(
+        expenses: [
+          Expense(
+            id: 'e1',
+            cribId: 'c1',
+            description: 'Groceries',
+            totalMinor: 125000,
+            currency: 'INR',
+            payerId: 'a',
+            shares: {'me': 62500, 'a': 62500},
+            date: DateTime(2026),
+            category: 'groceries',
+            createdById: 'a',
+          ),
+        ],
+      );
+
+      await world.repositories.expenses.delete('e1');
+
+      expect(world.store.expenses, isEmpty);
+      expect(
+        world.store.activity.map((event) => event.action),
+        contains('expense_deleted'),
+      );
+    });
+
+    test('an ordinary member still may not edit it', () async {
+      final world = TestHarness(
+        expenses: [
+          Expense(
+            id: 'e1',
+            cribId: 'c1',
+            description: 'Groceries',
+            totalMinor: 125000,
+            currency: 'INR',
+            payerId: 'a',
+            shares: {'me': 62500, 'a': 62500},
+            date: DateTime(2026),
+            category: 'groceries',
+            createdById: 'a',
+          ),
+        ],
+      );
+      // "r" is an ordinary member of the crib.
+      world.signIn('r');
+
+      await expectLater(
+        world.repositories.expenses.update(
+          (await world.repositories.expenses.getById('e1')).copyWith(
+            description: 'Hijacked',
+          ),
+        ),
+        throwsA(
+          isA<RepositoryException>().having(
+            (error) => error.code,
+            'code',
+            RepositoryErrorCode.unauthorized,
+          ),
+        ),
+      );
+    });
+
+    test('the owner of another crib may not edit it', () async {
+      final world = TestHarness(
+        expenses: [
+          Expense(
+            id: 'e1',
+            cribId: 'c1',
+            description: 'Groceries',
+            totalMinor: 125000,
+            currency: 'INR',
+            payerId: 'a',
+            shares: {'me': 62500, 'a': 62500},
+            date: DateTime(2026),
+            category: 'groceries',
+            createdById: 'a',
+          ),
+        ],
+      );
+      // "r" owns another crib, but not this one.
+      world.signIn('r');
+
+      await expectLater(
+        world.repositories.expenses.delete('e1'),
+        throwsA(
+          isA<RepositoryException>().having(
+            (error) => error.code,
+            'code',
+            RepositoryErrorCode.unauthorized,
+          ),
+        ),
+      );
+    });
+  });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/data/repositories.dart';
+import 'package:paycal/domain/financial_ledger.dart';
 
 import 'support/harness.dart';
 
@@ -157,7 +158,7 @@ void main() {
     );
   });
 
-  test('deleting a crib removes the records that belong to it', () async {
+  test('deleting a crib hides it and keeps the financial history', () async {
     final world = TestHarness(
       expenses: [testExpense()],
       settlements: [
@@ -176,7 +177,10 @@ void main() {
 
     await world.repositories.cribs.delete('c1');
 
-    expect(world.store.cribs, isEmpty);
+    // The crib is gone for the members, but its row stays, so the records of
+    // it still point at something that exists.
+    expect(world.repositories.cribs.cachedCribs, isEmpty);
+    expect(world.store.cribs.single.isDeleted, isTrue);
     // Financial history is preserved rather than erased.
     expect(world.store.expenses, isNotEmpty);
     expect(world.store.settlements, isNotEmpty);
@@ -216,5 +220,99 @@ void main() {
         ),
       ),
     );
+  });
+
+  group('deleting a crib with financial history', () {
+    TestHarness worldWithHistory() => TestHarness(
+      expenses: [
+        Expense(
+          id: 'e1',
+          cribId: 'c1',
+          description: 'Dinner',
+          totalMinor: 1000,
+          currency: 'INR',
+          payerId: 'me',
+          shares: {'me': 500, 'a': 500},
+          date: DateTime(2026),
+          category: 'other',
+        ),
+      ],
+      settlements: [
+        Settlement(
+          id: 's1',
+          cribId: 'c1',
+          currency: 'INR',
+          fromMemberId: 'a',
+          toMemberId: 'me',
+          amountMinor: 200,
+          status: SettlementStatus.confirmed,
+          createdAt: DateTime(2026),
+        ),
+      ],
+    );
+
+    test('the financial records stay and still resolve', () async {
+      final world = worldWithHistory();
+
+      await world.repositories.cribs.delete('c1');
+
+      // The records are kept, and they still point at a crib that exists.
+      expect(world.store.expenses, hasLength(1));
+      expect(world.store.settlements, hasLength(1));
+      expect(world.store.cribs, hasLength(1));
+      expect(world.store.cribs.single.isDeleted, isTrue);
+      expect(world.store.expenses.single.cribId, 'c1');
+      expect(world.store.settlements.single.cribId, 'c1');
+    });
+
+    test('the balances of the deleted crib still add up', () async {
+      final world = worldWithHistory();
+
+      await world.repositories.cribs.delete('c1');
+
+      final balances = FinancialLedger.balances(
+        crib: world.store.cribs.first,
+        expenses: world.store.expenses,
+        settlements: world.store.settlements,
+      );
+      expect(balances, {'me': 300, 'a': -300, 'r': 0});
+    });
+
+    test('the members lose access to the crib and to its records', () async {
+      final world = worldWithHistory();
+
+      await world.repositories.cribs.delete('c1');
+
+      expect(world.repositories.cribs.cachedCribs, isEmpty);
+      expect(world.repositories.expenses.cachedExpenses, isEmpty);
+      expect(world.repositories.settlements.cachedSettlements, isEmpty);
+      expect(world.repositories.activity.cachedEvents, isEmpty);
+      await expectLater(
+        world.repositories.cribs.getById('c1'),
+        throwsA(
+          isA<RepositoryException>().having(
+            (error) => error.code,
+            'code',
+            RepositoryErrorCode.notFound,
+          ),
+        ),
+      );
+    });
+
+    test('a deleted crib can be deleted only once', () async {
+      final world = worldWithHistory();
+
+      await world.repositories.cribs.delete('c1');
+      await expectLater(
+        world.repositories.cribs.delete('c1'),
+        throwsA(
+          isA<RepositoryException>().having(
+            (error) => error.code,
+            'code',
+            RepositoryErrorCode.notFound,
+          ),
+        ),
+      );
+    });
   });
 }

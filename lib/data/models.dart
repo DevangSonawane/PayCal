@@ -203,6 +203,7 @@ class Crib {
     required List<String> categories,
     this.ownerId,
     this.version = 0,
+    this.deletedAt,
   }) : members = List.unmodifiable(members),
        categories = List.unmodifiable(categories);
   final String id;
@@ -212,6 +213,16 @@ class Crib {
   final List<String> categories;
   final String? ownerId;
   final int version;
+
+  /// When the crib was deleted.
+  ///
+  /// A deleted crib keeps its row, so the expenses, the settlements and the
+  /// activity of it still point at something that exists. The members lose
+  /// access to it, the history stays complete.
+  final DateTime? deletedAt;
+
+  /// Whether the crib was deleted.
+  bool get isDeleted => deletedAt != null;
 
   bool isOwnedBy(String userId) => ownerId == userId;
 
@@ -226,6 +237,9 @@ class Crib {
     return null;
   }
 
+  /// A missing value that means "keep the current one".
+  static const Object _unset = Object();
+
   Crib copyWith({
     String? name,
     String? currency,
@@ -233,6 +247,7 @@ class Crib {
     List<String>? categories,
     String? ownerId,
     int? version,
+    Object? deletedAt = _unset,
   }) => Crib(
     id: id,
     name: name ?? this.name,
@@ -241,6 +256,9 @@ class Crib {
     categories: categories ?? this.categories,
     ownerId: ownerId ?? this.ownerId,
     version: version ?? this.version,
+    deletedAt: identical(deletedAt, _unset)
+        ? this.deletedAt
+        : deletedAt as DateTime?,
   );
 }
 
@@ -382,21 +400,31 @@ class RecurringPayment {
     bool? active,
     Object? payerId = _unset,
     Object? resumeFrom = _unset,
+    String? description,
+    int? amountMinor,
+    String? category,
+    RecurringFrequency? frequency,
+    String? recipientId,
+    DateTime? startDate,
+    String? timeZone,
+    int? localHour,
+    int? localMinute,
+    int? anchorDay,
   }) => RecurringPayment(
     id: id,
     cribId: cribId,
-    description: description,
-    amountMinor: amountMinor,
+    description: description ?? this.description,
+    amountMinor: amountMinor ?? this.amountMinor,
     currency: currency,
-    category: category,
-    frequency: frequency,
-    recipientId: recipientId,
+    category: category ?? this.category,
+    frequency: frequency ?? this.frequency,
+    recipientId: recipientId ?? this.recipientId,
     createdById: createdById,
-    startDate: startDate,
-    timeZone: timeZone,
-    localHour: localHour,
-    localMinute: localMinute,
-    anchorDay: anchorDay,
+    startDate: startDate ?? this.startDate,
+    timeZone: timeZone ?? this.timeZone,
+    localHour: localHour ?? this.localHour,
+    localMinute: localMinute ?? this.localMinute,
+    anchorDay: anchorDay ?? this.anchorDay,
     active: active ?? this.active,
     payerId: identical(payerId, _unset) ? this.payerId : payerId as String?,
     resumeFrom: identical(resumeFrom, _unset)

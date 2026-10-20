@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Golden test failure artefacts. Flutter writes them when a golden test
+# fails; they are evidence for a developer, not source.
+test/failures/

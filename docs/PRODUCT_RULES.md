@@ -42,9 +42,13 @@ tracked here so a backend implementation does not silently invent behaviour.
   - create: the signed-in member is an active member of the crib and is the
     payer;
   - edit / delete: the creator (`Expense.createdById`, falling back to the
-    payer for older records) or the payer;
+    payer for older records), the payer, **or the Crib Owner**. The owner
+    manages the whole crib, so they may correct any expense in it;
   - flag a dispute: any active member of the crib; a dispute never changes
     the money.
+- The owner override does not extend to the money rules: the payer, the
+  currency and the split still cannot be changed, and the settled history is
+  still frozen.
 - The payer, the currency and the amount split of an expense cannot be changed
   silently: changing the payer or the currency is rejected.
 - Every mutation carries an optimistic-concurrency version. A stale version is
@@ -56,11 +60,36 @@ tracked here so a backend implementation does not silently invent behaviour.
 
 **Open**
 
-- Tombstone / reversal instead of a hard delete. The in-memory store still
-  removes the record on delete; the tombstone model has to land with the
-  backend.
-- Admin override for editing somebody else's expense. Not implemented, because
-  v1 has a single admin and no override was approved.
+- Tombstone / reversal instead of a hard delete for an **expense**. The
+  in-memory store still removes the record on delete; the tombstone model has
+  to land with the backend.
+- Admin override for editing somebody else's expense. **Decided 2026-10-20:**
+  the Crib Owner may edit and delete any expense of their own crib. There is
+  no platform role and no override that reaches across cribs.
+
+## 2b. Deleting a Crib
+
+**Approved**
+
+- The Crib Owner can delete their Crib, and the app asks for a confirmation
+  first. The confirmation says what happens to the records.
+- **The delete is a tombstone.** The Crib keeps its row, so the expenses, the
+  settlements and the activity of it still point at something that exists and
+  the balances of a deleted Crib still add up. The records are never
+  destroyed and never become orphans.
+- **The members lose access.** A deleted Crib does not show up in the lists
+  any more, and its expenses, settlements and activity are not readable
+  through the app. The history stays complete for the record, not for the
+  members.
+- A deleted Crib cannot be changed, deleted again, or have its membership
+  touched. Deleting it twice does not write a second event.
+
+**Open**
+
+- Whether a member should be told that a Crib was deleted, and how. The
+  activity event exists, but the members of a deleted Crib do not see their
+  own feed any more.
+- Whether the owner can undo the deletion.
 
 ## 3. Invitations
 

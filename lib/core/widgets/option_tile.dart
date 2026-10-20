@@ -14,17 +14,23 @@ class OptionTile extends StatelessWidget {
     this.support,
     this.leading,
     this.selected = false,
-    required this.onTap,
+    this.onTap,
   });
 
   final String title;
   final String? support;
   final Widget? leading;
   final bool selected;
-  final VoidCallback onTap;
+
+  /// What happens when the tile is tapped.
+  ///
+  /// A null callback makes the tile inert, which is how an option that only
+  /// the Crib Owner may use is shown to everybody else.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
     return AnimatedContainer(
       duration: AppMotion.base,
       curve: Curves.easeOutCubic,
@@ -37,10 +43,12 @@ class OptionTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadii.tile),
-          onTap: () {
-            AppHaptics.soft();
-            onTap();
-          },
+          onTap: enabled
+              ? () {
+                  AppHaptics.soft();
+                  onTap?.call();
+                }
+              : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
@@ -59,7 +67,9 @@ class OptionTile extends StatelessWidget {
                       Text(
                         title,
                         style: AppTypography.titleSmall.copyWith(
-                          color: AppPalette.current.ink,
+                          color: enabled
+                              ? AppPalette.current.ink
+                              : AppPalette.current.grey,
                           fontWeight: FontWeight.w800,
                         ),
                       ),

@@ -13,6 +13,141 @@ one that genuinely needs the service role, no separate balance store.
 
 ---
 
+---
+
+# 0. The short version — what to build first
+
+This section is the practical plan. Everything after it is the detailed design
+that backs it up.
+
+## 0.1 The minimum that makes the current app work on Supabase
+
+**Nine tables.** Nothing else is needed for the features that exist today.
+
+| Table | Holds | Key columns |
+|---|---|---|
+| `profiles` | One row per person | `id` (the `auth.users` id), `display_name`, `created_at` |
+| `cribs` | A shared group | `id`, `name`, `currency`, `owner_id` **not null**, `categories`, `version`, `deleted_at` |
+| `crib_members` | Who is in a crib | `crib_id`, `user_id`, `left_at` (null = active), unique `(crib_id, user_id)` |
+| `expenses` | One expense | `crib_id`, `description`, `total_minor`, `currency`, `payer_id`, `created_by`, `category`, `occurred_on`, `disputed_at`, `version`, `deleted_at` |
+| `expense_shares` | Who carries what | `expense_id`, `user_id`, `share_minor`, unique `(expense_id, user_id)` |
+| `settlements` | A recorded payment | `crib_id`, `from_user_id`, `to_user_id`, `amount_minor`, `status`, `idempotency_key`, `version` |
+| `invitations` | An invite token | `crib_id`, `token_hash`, `created_by`, `expires_at`, `revoked_at`, `accepted_by`, `accepted_at` |
+| `recurring_schedules` | A recurring transfer | `crib_id`, `created_by`, `recipient_id`, `payer_id` (**null = paused**), `resume_from`, `amount_minor`, `frequency`, `anchor_day`, `local_time`, `time_zone`, `start_date`, `active` |
+| `activity_events` | The audit trail | `crib_id`, `actor_id`, `action`, `target_id`, `occurred_at` |
+
+`recurring_occurrences` is a tenth table, but it is an idempotency ledger
+rather than user data, and it can wait until the recurring generation moves to
+the server.
+
+## 0.2 Authentication
+
+* Supabase Auth with email and password, plus the OAuth provider the sign-in
+  screen already offers.
+* `profiles.id` is the `auth.users.id`. **The client never sends a user id.**
+* The `AuthRepository` in `lib/data/repositories.dart` is the seam: today it
+  stores a client-owned id in memory, and the Supabase implementation replaces
+  that with the Supabase session. Nothing else in the app changes.
+* Sign out has to revoke the session and the sign-in screen has to wait for
+  it. Both are currently fake and are listed as launch blockers in
+  `docs/RELEASE_READINESS_CHECKLIST.md`.
+
+## 0.3 The three rules the database has to enforce
+
+The client already refuses the wrong actions. **That is a usability feature,
+not a security boundary** — a modified client skips every check. These three
+rules have to live in the database:
+
+| Rule | How the database enforces it |
+|---|---|
+| A member only ever sees their own cribs | RLS `using (public.was_member(crib_id))` on every table, plus a `profiles` policy for the own row |
+| Only the **Crib Owner** may manage the crib and its members | `public.is_crib_owner(crib_id)` checked inside every `SECURITY DEFINER` RPC — never in the Flutter layer |
+| The money is only ever computed from stored rows | The share sum, the pairwise debt and the balance are computed in SQL, inside the transaction that writes the row |
+
+## 0.4 The owner permissions, server-side
+
+The owner-only operations are exactly these RPCs, and each one starts with
+`is_crib_owner(crib_id)`:
+
+`update_crib` · `delete_crib` · `add_member` · `remove_member` ·
+`create_invitation` · `revoke_invitation` · `create_recurring_schedule` ·
+`update_recurring_schedule` · `cancel_recurring_schedule` ·
+`assign_recurring_payer`
+
+Two rules that are easy to get wrong:
+
+* **The Crib Owner may correct any expense of their own crib.** The owner is
+  not the payer and not the author of most expenses, so
+  `update_expense` and `delete_expense` accept
+  `payer_id = auth.uid() or created_by = auth.uid() or is_crib_owner(crib_id)`.
+  A plain member still cannot touch it.
+* **A member may never manage another member's expense.** The rule above is
+  the only way in, and it needs the real owner id, not a client-supplied one.
+
+## 0.5 The constraints that protect the money
+
+These are the ones worth getting wrong at your peril:
+
+| Constraint | Why |
+|---|---|
+| `expense_shares.share_minor >= 0` and the **sum of the shares equals `expenses.total_minor`** | A wrong share sum silently changes every balance |
+| `expenses.payer_id` is one of the share participants | The payer carries their own part |
+| Every share participant is an **active** member of the crib | A removed member is never charged again |
+| `settlements.from_user_id <> to_user_id` and `amount_minor > 0` | No self-payments, no zero amounts |
+| `settlements.amount_minor <= pairwise_debt(from, to)` | A member cannot pay off a debt they do not have. **Checked inside the transaction**, not in the client |
+| `unique (crib_id, from_user_id, idempotency_key)` on `settlements` | A repeated request returns the original settlement instead of a second one |
+| `settlements` in `('pending','confirmed','cancelled','self_managed')` and only a `pending` settlement can become `confirmed` | A confirmed settlement is never rewritten |
+| `cribs.owner_id` is `not null` | Without it the owner check falls back to "the first member", which is a hole |
+| `cribs.version` and `expenses.version` are compare-and-swap targets | Two devices cannot overwrite each other |
+
+The share sum and the pairwise debt are the two that a plain
+`CHECK` constraint cannot express. They are enforced by a **deferred
+constraint trigger** on `expenses` (the sum) and by the settlement RPC (the
+debt), so the rule holds even if a row is written by a script.
+
+## 0.6 The order to build it in
+
+1. **`profiles` + `cribs` + `crib_members`**, with RLS and the two helper
+   functions (`was_member`, `is_crib_owner`). Everything else depends on them.
+2. **Auth**: replace `InMemoryAuthRepository` with the Supabase session, and
+   make sign-in, sign-out and session restore real.
+3. **`expenses` + `expense_shares`**, with the share-sum trigger and the
+   `create_expense` / `update_expense` / `delete_expense` RPCs.
+4. **`settlements`**, with `pairwise_debt` and the idempotency key.
+5. **`invitations`**, with the token hashed server-side.
+6. **`activity_events`**, written by the same transaction as the mutation, so
+   the actor and the timestamp are the server's.
+7. **`recurring_schedules`**, with the payer and the paused state.
+
+Each step is independently useful, and steps 1 to 4 are the minimum for the
+app to be a real product.
+
+## 0.7 How to prove it works
+
+The client-side tests in `test/` are a contract suite. The moment the Supabase
+implementation exists, the **same tests must run against it**. That is the
+mechanism that keeps the two implementations honest, and it is what catches a
+rule that was implemented on one side only.
+
+The tests that must pass against the database, and what they prove:
+
+| Test | Proves |
+|---|---|
+| `repository_isolation_test.dart` | A second member in a second crib cannot read the first crib's data |
+| `owner_permissions_test.dart` | Every owner-only operation is refused for a member **by the database** |
+| `expense_permissions_test.dart` | The owner may correct any expense of their crib, a member may not |
+| `settlement_pairwise_debt_test.dart` | The overpayment rule, the idempotency key and the mismatched payload |
+| `active_member_enforcement_test.dart` | A removed member cannot be charged, and the history stays valid |
+| `recurring_pause_test.dart` | The payer, the pause and the assignment |
+
+Plus three that only exist on the server:
+
+* two members of the same crib see each other's expenses,
+* two devices cannot record the same settlement twice,
+* a rejected settlement leaves no trace.
+
+---
+
 ## 1. Findings from the code review
 
 Everything below was checked against the current working tree, not against the
@@ -712,13 +847,13 @@ and granted only to `authenticated`.
 | --- | --- | --- |
 | `create_crib(name, currency, categories)` | `auth.uid()` becomes `owner_id` and the first membership | One transaction; activity event written in the same transaction |
 | `update_crib(id, name, currency, categories, expected_version)` | `is_crib_owner(id)` | `where id = $1 and version = $2` → 0 rows means conflict |
-| `delete_crib(id, expected_version)` | `is_crib_owner(id)` **and** no confirmed settlements | Soft delete (`deleted_at`), never a hard delete (fixes C3) |
+| `delete_crib(id, expected_version)` | `is_crib_owner(id)` | **Soft delete (`deleted_at`), never a hard delete.** The row stays, so the expenses, the settlements and the activity of the Crib still resolve and the balances still add up. The members lose access: the Crib and all of its rows are hidden from the reads. A deleted Crib cannot be changed or deleted again (fixes C3 and the orphaning of the financial rows) |
 | `add_member(crib_id, user_id)` | `is_crib_owner(crib_id)`; the user must exist in `profiles` | Insert with `on conflict do update` to re-activate; the name comes from `profiles`, never from the client (fixes H4) |
 | `remove_member(crib_id, user_id)` | `is_crib_owner(crib_id)`; never the owner | Sets `left_at`; keeps the row so history stays valid |
 | `create_expense(crib_id, description, total_minor, category, occurred_on, shares jsonb)` | `is_active_member(crib_id)` and `payer_id = auth.uid()`; every share participant must be an active member | Insert expense + shares + activity in one transaction; the share sum is checked against `total_minor` by a deferred constraint trigger; the payer must be a participant of their own expense |
-| `update_expense(id, ..., expected_version)` | `is_active_member` and (`payer_id = auth.uid()` or `created_by = auth.uid()`); payer and currency immutable; §3.4 freeze predicate | Compare-and-swap on `version`; metadata-only updates skip the freeze predicate |
+| `update_expense(id, ..., expected_version)` | `is_active_member` and (`payer_id = auth.uid()` or `created_by = auth.uid()` **or `is_crib_owner(crib_id)`**); payer and currency immutable; §3.4 freeze predicate | Compare-and-swap on `version`; metadata-only updates skip the freeze predicate. **The Crib Owner may correct any expense of their crib** |
 | `flag_dispute(id)` | `is_active_member(crib_id)` | Sets `disputed_at`/`disputed_by`; never blocked by the freeze rule |
-| `delete_expense(id, expected_version)` | payer or creator | Tombstone (`deleted_at`), never a hard delete |
+| `delete_expense(id, expected_version)` | payer, creator **or the Crib Owner** | Tombstone (`deleted_at`), never a hard delete |
 | `create_settlement(crib_id, to_user_id, amount_minor, idempotency_key, status)` | `from_user_id = auth.uid()`; `status` in ('pending','self_managed') only — a confirmed settlement is unreachable here | `pg_advisory_xact_lock(hashtext(crib_id))` serialises settlements per crib; overpayment checked against `pairwise_debt`; `on conflict (crib_id, requested_by, idempotency_key) do nothing` then return the existing row (fixes H3) |
 | `confirm_settlement(id, expected_version)` | `to_user_id = auth.uid()` and `status = 'pending'` | Compare-and-swap; the amount can never be changed |
 | `cancel_settlement(id, expected_version)` | `from_user_id = auth.uid()` and `status = 'pending'` | Status change only |
@@ -726,6 +861,7 @@ and granted only to `authenticated`.
 | `accept_invitation(raw_token)` | any authenticated user | Hash, look up, check revoked/expired/used/crib-deleted, check the caller is not already an active member, insert the membership, mark the acceptance, write the activity event — one transaction (fixes the low finding about readable metadata: the row is not readable directly) |
 | `revoke_invitation(id)` | `is_crib_owner(crib_id)` | Sets `revoked_at`; already accepted members keep their membership |
 | `create_recurring_schedule(...)` | `is_crib_owner(crib_id)` and `created_by = auth.uid()` | Validates the IANA zone against `pg_timezone_names` |
+| `update_recurring_schedule(id, description, amount_minor, category, frequency, recipient_id, start_date)` | `is_crib_owner(crib_id)` | The occurrences that were generated already stay in the ledger; the payer and `resume_from` are not touched |
 | `cancel_recurring_schedule(id)` | `is_crib_owner` | Sets `active = false`; past occurrences stay |
 | `generate_due_occurrences(crib_id)` | `is_active_member(crib_id)` | `insert ... on conflict (schedule_id, occurrence_date) do nothing`; the expense is created **only** if the occurrence row was actually inserted. The unique constraint makes concurrent runs and two devices safe (fixes H7 for recurring). **A schedule with `payer_id is null` is paused and generates nothing** |
 | `assign_recurring_payer(id, user_id)` | `is_crib_owner(crib_id)` | The assignee has to be an active member; `payer_id` is set and `resume_from` is kept; the assignment and the resume are written in the same transaction as the activity events |
@@ -833,6 +969,7 @@ plan.
 | `InvitationRepository.revoke` | `rpc('revoke_invitation', id)` | |
 | `InvitationRepository.list(cribId)` | `select … from invitations where crib_id = $1` | Owner-only by policy |
 | `RecurringPaymentRepository.create` | `rpc('create_recurring_schedule', …)` | The payer is the creator; the payer has to be an active member |
+| `RecurringPaymentRepository.update` | `rpc('update_recurring_schedule', id, …)` | Owner only; the generated occurrences stay |
 | `RecurringPaymentRepository.cancel` | `rpc('cancel_recurring_schedule', id)` | |
 | `RecurringPaymentRepository.assignPayer` | `rpc('assign_recurring_payer', id, user_id)` | **New in Milestone 2B.** Owner only; the assignee has to be an active member; the assignment and the resume are written in the same transaction |
 | `RecurringPaymentRepository.generateDue` | `rpc('generate_due_occurrences', crib_id)` | The client stops computing dates; the server owns the rules |

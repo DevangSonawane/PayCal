@@ -87,13 +87,15 @@ abstract interface class ExpenseRepository {
   /// member as well, so a member that left is never charged again.
   Future<Expense> create(Expense expense);
 
-  /// Updates an expense. The creator and the payer may edit it.
+  /// Updates an expense. The creator, the payer and the Crib Owner may edit
+  /// it, because the owner manages the whole crib.
   Future<Expense> update(Expense expense);
 
   /// Flags an expense as disputed. Any active member of the crib may do it.
   Future<Expense> flagDispute(String id);
 
-  /// Deletes an expense. The creator and the payer may delete it.
+  /// Deletes an expense. The creator, the payer and the Crib Owner may delete
+  /// it.
   Future<void> delete(String id, {int? expectedVersion});
 }
 
@@ -183,6 +185,10 @@ abstract interface class RecurringPaymentRepository {
   /// Creates a schedule. Owner only. The creator is the payer of the
   /// generated occurrences.
   Future<RecurringPayment> create(RecurringPayment schedule);
+
+  /// Changes the details of a schedule. The occurrences that were generated
+  /// already stay in the ledger. Owner only.
+  Future<RecurringPayment> update(RecurringPayment schedule);
 
   /// Cancels a schedule. Only future occurrences stop.
   Future<void> cancel(String id);

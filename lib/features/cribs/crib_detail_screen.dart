@@ -192,6 +192,13 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
       first.month == second.month &&
       first.day == second.day;
 
+  /// An amount as a plain number, so the amount field can parse it back.
+  static String _plainAmount(int minorUnits) {
+    final whole = minorUnits ~/ 100;
+    final fraction = (minorUnits % 100).toString().padLeft(2, '0');
+    return '$whole.$fraction';
+  }
+
   /// Lets the owner choose the member who pays a recurring transfer.
   ///
   /// A paused schedule waits for an active member, and a running schedule can
@@ -403,6 +410,31 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
                           ],
                         ),
                       ),
+                      if (_isOwner)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _showRecurringTransferSheet(existing: r);
+                          },
+                          child: Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: _DPalette.current.card,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: _DPalette.current.ink,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.edit_outlined,
+                              size: 17,
+                              color: _DPalette.current.ink,
+                            ),
+                          ),
+                        ),
+                      if (_isOwner) SizedBox(width: AppSpacing.sm),
                       if (_isOwner)
                         GestureDetector(
                           onTap: () {
@@ -690,9 +722,14 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
     );
   }
 
-  void _showRecurringTransferSheet() {
-    final amount = TextEditingController();
-    final description = TextEditingController();
+  void _showRecurringTransferSheet({RecurringPayment? existing}) {
+    final editing = existing != null;
+    final amount = TextEditingController(
+      text: editing ? _plainAmount(existing.amountMinor) : '',
+    );
+    final description = TextEditingController(
+      text: editing ? existing.description : '',
+    );
     final recipients = _activeMembers
         .where((member) => member.id != _meId)
         .toList();
@@ -700,13 +737,15 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
       showAppToast(context, 'Add someone to the crib first');
       return;
     }
-    var category = _crib.categories.first;
-    var frequency = RecurringFrequency.monthly;
-    var dueDate = DateTime.now();
-    var recipientId = recipients.first.id;
+    var category = editing ? existing.category : _crib.categories.first;
+    var frequency = editing ? existing.frequency : RecurringFrequency.monthly;
+    var dueDate = editing ? existing.startDate : DateTime.now();
+    var recipientId = editing && recipients.any((m) => m.id == existing.recipientId)
+        ? existing.recipientId
+        : recipients.first.id;
 
     _showFormDialog(
-      title: 'Set up recurring transfer',
+      title: editing ? 'Edit recurring transfer' : 'Set up recurring transfer',
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setSheetState) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -771,7 +810,7 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
         ),
       ),
       footer: PrimaryButton(
-        label: 'Save recurring transfer',
+        label: editing ? 'Save changes' : 'Save recurring transfer',
         onPressed: () async {
           final minor = Money.tryParseToMinor(amount.text);
           if (minor == null || minor <= 0) {
@@ -783,21 +822,34 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
             return;
           }
           try {
-            await PayCalRepositories.instance.recurring.create(
-              RecurringPayment(
-                id: 'r${DateTime.now().millisecondsSinceEpoch}',
-                cribId: _crib.id,
-                description: description.text.trim(),
-                amountMinor: minor,
-                currency: _crib.currency,
-                category: category,
-                frequency: frequency,
-                recipientId: recipientId,
-                createdById: _meId,
-                startDate: dueDate,
-                timeZone: RecurringScheduler.deviceTimeZone(),
-              ),
-            );
+            if (editing) {
+              await PayCalRepositories.instance.recurring.update(
+                existing.copyWith(
+                  description: description.text.trim(),
+                  amountMinor: minor,
+                  category: category,
+                  frequency: frequency,
+                  recipientId: recipientId,
+                  startDate: dueDate,
+                ),
+              );
+            } else {
+              await PayCalRepositories.instance.recurring.create(
+                RecurringPayment(
+                  id: 'r${DateTime.now().millisecondsSinceEpoch}',
+                  cribId: _crib.id,
+                  description: description.text.trim(),
+                  amountMinor: minor,
+                  currency: _crib.currency,
+                  category: category,
+                  frequency: frequency,
+                  recipientId: recipientId,
+                  createdById: _meId,
+                  startDate: dueDate,
+                  timeZone: RecurringScheduler.deviceTimeZone(),
+                ),
+              );
+            }
           } on RepositoryException catch (error) {
             if (mounted) showAppToast(context, error.message);
             return;
@@ -806,7 +858,12 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
           await _postDueRecurringPayments();
           if (!mounted) return;
           Navigator.of(context).pop();
-          showAppToast(context, 'Recurring transfer saved');
+          showAppToast(
+            context,
+            editing
+                ? 'Recurring transfer updated'
+                : 'Recurring transfer saved',
+          );
         },
       ),
     );

@@ -40,9 +40,13 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   /// The signed-in member.
   String get _meId => PayCalRepositories.instance.currentUserId;
 
-  /// Only the payer or the author may edit or delete an expense.
-  bool get _canManage =>
-      expense.payerId == _meId || expense.authorId == _meId;
+  /// Only the payer, the author or the Crib Owner may edit or delete an
+  /// expense. The owner manages the whole crib, so they can correct any
+  /// expense in it.
+  bool get _canManage {
+    if (expense.payerId == _meId || expense.authorId == _meId) return true;
+    return crib?.ownerId == _meId;
+  }
 
   Future<bool> _replace(Expense next) async {
     try {

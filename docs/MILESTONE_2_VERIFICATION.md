@@ -678,6 +678,145 @@ fails. **They are tracked in git and `.gitignore` does not exclude them.**
 
 ---
 
+---
+
+# Milestone 2C — Finishing the app and preparing for Supabase
+
+**Date:** 2026-10-20
+**Scope:** the Crib Owner controls, the Git and CI tracking, the release
+journeys, and the Supabase preparation.
+
+## 1. Verification (executed)
+
+| Where | `flutter analyze` | `flutter test` |
+|---|---|---|
+| Working tree | **No issues found!** | **249 passed, 0 failed** |
+| **Clean checkout of the intended revision** | **No issues found!** | **249 passed, 0 failed** |
+| `--platform chrome` (real web platform) | — | **248 passed, 1 failed** (the golden, see §4) |
+| Clean checkout of `HEAD 2fe68eb` | No issues found! | 8 passed (the previous app) |
+
+## 2. What was implemented
+
+| Change | Where | Tests |
+|---|---|---|
+| **The Crib Owner may edit and delete any expense of their own crib** | `in_memory_repositories.dart` `_canManageExpense`, `expense_detail_screen.dart` `_canManage` | `expense_permissions_test.dart` (4 new), `ui_flows_test.dart` (1 new) |
+| **Recurring transfers can be edited** — amount, description, category, frequency, recipient, first date | `RecurringPaymentRepository.update`, `crib_detail_screen.dart` | `recurring_pause_test.dart` (5 new) |
+| The Crib editor, the recurring controls and the scan picker show the owner-only actions only to the owner | `crib_edit_sheet.dart`, `crib_detail_screen.dart`, `scan_flow.dart`, `option_tile.dart` | `owner_ui_gating_test.dart`, `release_journeys_test.dart` |
+| A double tap on "Record my transfer" cannot record twice | `settle_up_sheet.dart` `_RecordTransfersButton` | — |
+| The delete confirmation says what actually happens to the expenses | `crib_edit_sheet.dart` | `release_journeys_test.dart` |
+
+## 3. Git and CI
+
+* **Everything is tracked.** The previous milestone's 41 untracked files were
+  committed by the user in `2fe68eb`; this milestone adds the remaining
+  changes to the index.
+* **`test/failures/` is no longer tracked** and is in `.gitignore`. Those are
+  generated failure artefacts, not source. They stay on disk.
+* **A clean checkout of the intended revision passes the whole suite.** That
+  was the open item, and it is now closed. The check was done with
+  `git checkout-index -a --prefix=<dir>/`, which writes exactly the tracked
+  files into an empty directory — a true clean checkout without a commit.
+* Nothing was committed or pushed. **The index needs one commit.**
+
+## 4. The golden baseline is platform-specific
+
+The single baseline was rendered on macOS. On Chrome the same layout renders
+with a different font rasterisation. Measured with an independent PNG
+decoder:
+
+* **identical card bounds** in both,
+* **identical ink profile** on every sampled row (delta 0, except the one
+  text row that differs by 20 pixels),
+* 10,535 differing pixels of 480,000 — **2.19 %**.
+
+That is a rasterisation difference, **not a layout regression**. For a CI
+that runs several platforms, either keep a baseline per platform or run the
+golden test on the reference platform only.
+
+## 5. Supabase preparation
+
+`docs/SUPABASE_MIGRATION_PLAN.md` §0 now carries the practical plan: the
+minimum nine tables, the authentication requirements, the three rules the
+database has to enforce, the owner permissions as server-side RPCs, the
+constraints that protect the money, the order to build it in, and the tests
+that have to pass against the database.
+
+The RPC authorisation now mirrors the product decision: `update_expense` and
+`delete_expense` accept the Crib Owner, not only the payer and the author.
+
+---
+
+# Milestone 2D — Final pre-Supabase product verification
+
+**Date:** 2026-10-20
+**Scope:** the last verification pass before the backend work. The app was run
+on a real device, the money rules were checked against hand-computed numbers,
+and the deletion behaviour was made consistent.
+
+## 1. Verification (executed)
+
+| Where | `flutter analyze` | `flutter test` |
+|---|---|---|
+| Working tree | **No issues found!** | **274 passed, 0 failed** |
+| Clean checkout of the intended revision | **No issues found!** | **274 passed, 0 failed** |
+| `flutter test --platform chrome` | — | 273 passed, 1 failed (the golden, platform specific) |
+| **macOS desktop, a real device** | — | **both integration tests pass** |
+| **iOS 18.0 simulator, a real device** | — | the app **launches and renders**; the scripted runner does not finish in this headless environment |
+| Android | — | **unverified, no AVD on this machine and the Android licences are not accepted** |
+
+The two integration tests have to be run **one file at a time**: the runner
+starts the app once per command, and a second app cannot be foregrounded while
+the first one is running.
+
+## 2. What was fixed
+
+| Defect | Fix | Tests |
+|---|---|---|
+| **Deleting a Crib orphaned its financial rows.** The expenses, the settlements and the activity pointed at a crib that no longer existed, so the balances of a deleted crib could not be computed any more | The delete is a **tombstone** now: the row stays with `deleted_at`, so the history still resolves, and the members lose access to the crib and to its records | `crib_operations_test.dart` (4 new), `release_journeys_test.dart` |
+| **A deleted Crib could be deleted again**, which wrote a second `crib_deleted` event | The owner operations refuse a deleted crib | `crib_operations_test.dart` |
+| **A deleted Crib could still be updated**, and its membership could still be changed | Same guard | `crib_operations_test.dart` |
+| The `test/failures/` artefacts were tracked in git | They are generated output, so they are ignored and untracked now | — |
+| The `integration_test` package was missing | Added as an SDK dev dependency, so the device smoke test can run | `integration_test/app_smoke_test.dart` |
+
+## 3. The money rules, checked by hand
+
+`test/financial_scenarios_test.dart` works the expected numbers out by hand
+instead of calling the ledger again. It covers the equal split with the
+remainder, the percentage split, two payers, editing and deleting an expense,
+a partial settlement, the suggested transfers, a repeated submission and the
+currency precision.
+
+Two findings came out of it, both in the **test**, not in the code:
+
+* The percentage split gives the remainder to the payer, the same rule as the
+  equal split. The test now says so.
+* The suggested transfers settle the **mutual** debt first: "me" and "a" owe
+  each other 333 and 300, so only the 33 that "me" is owed stays, and the plan
+  is `a → me 33`, `b → me 333`, `b → a 300`. Recording it brings every
+  member to exactly zero.
+
+## 4. The recurring transfers
+
+`test/recurring_pause_test.dart` now also checks the generated occurrences: a
+monthly schedule runs on the fifteenth of every month, every occurrence carries
+the amount, the currency and the payer, running the generation twice does not
+create a second expense, a schedule that is not due yet generates nothing and a
+cancelled schedule generates nothing any more.
+
+## 5. The deletion, decided
+
+The rules did not say what happens to the financial history of a deleted Crib.
+The simplest consistent behaviour is now in place and in the product rules:
+
+* the Crib keeps its row, so the expenses, the settlements and the activity
+  of it still point at something that exists and the balances still add up;
+* the members lose access to the Crib and to all of its records;
+* a deleted Crib cannot be changed, deleted again, or have its membership
+  touched.
+
+This is the same model the backend uses (`deleted_at` plus RLS), so the
+in-memory implementation previews the database behaviour.
+
 ## 9. Cross-references
 
 * `docs/COMPREHENSIVE_PRODUCT_AUDIT.md` — the audit and the finding register

@@ -130,6 +130,9 @@ void main() {
       ],
     );
     PayCalRepositories.instance = world.repositories;
+    // "r" is an ordinary member: neither the payer nor the author of the
+    // expense, and not the owner of the crib.
+    world.signIn('r');
     final expense = await world.repositories.expenses.getById('e1');
 
     await tester.pumpWidget(
@@ -140,6 +143,38 @@ void main() {
     expect(find.text('Flag a problem'), findsOneWidget);
     expect(find.text('Edit'), findsNothing);
     expect(find.text('Delete'), findsNothing);
+  });
+
+  testWidgets('the expense screen shows edit and delete for the crib owner', (
+    tester,
+  ) async {
+    final world = TestHarness(
+      expenses: [
+        Expense(
+          id: 'e1',
+          cribId: 'c1',
+          description: 'Groceries',
+          totalMinor: 125000,
+          currency: 'INR',
+          payerId: 'a',
+          shares: {'me': 62500, 'a': 62500},
+          date: DateTime(2026),
+          category: 'groceries',
+          createdById: 'a',
+        ),
+      ],
+    );
+    PayCalRepositories.instance = world.repositories;
+    // "me" owns the crib, so they may correct any expense in it.
+    final expense = await world.repositories.expenses.getById('e1');
+
+    await tester.pumpWidget(
+      MaterialApp(home: ExpenseDetailScreen(expense: expense)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
   });
 
   testWidgets('the payer can edit the expense', (tester) async {

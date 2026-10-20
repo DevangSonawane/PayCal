@@ -438,4 +438,202 @@ void main() {
       expect(world.store.schedules.single.payerId, isNull);
     });
   });
+
+  group('editing a recurring transfer', () {
+    test('the owner can change the details of a schedule', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(
+        monthlySchedule(),
+      );
+
+      final updated = await world.repositories.recurring.update(
+        world.store.schedules.single.copyWith(
+          description: 'Pocket money plus',
+          amountMinor: 75000,
+          frequency: RecurringFrequency.yearly,
+        ),
+      );
+
+      expect(updated.description, 'Pocket money plus');
+      expect(updated.amountMinor, 75000);
+      expect(updated.frequency, RecurringFrequency.yearly);
+      expect(world.store.schedules.single.amountMinor, 75000);
+    });
+
+    test('a member cannot edit a schedule', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(monthlySchedule());
+      world.signIn('r');
+
+      await expectLater(
+        world.repositories.recurring.update(
+          world.store.schedules.single.copyWith(amountMinor: 1),
+        ),
+        throwsA(
+          isA<RepositoryException>().having(
+            (error) => error.code,
+            'code',
+            RepositoryErrorCode.unauthorized,
+          ),
+        ),
+      );
+    });
+
+    test('the generated occurrences stay untouched', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(
+        monthlySchedule(startDate: DateTime(2026, 1, 31, 9)),
+      );
+      await world.repositories.recurring.generateDue(
+        cribId: 'c1',
+        now: DateTime.utc(2026, 2, 5),
+      );
+
+      await world.repositories.recurring.update(
+        world.store.schedules.single.copyWith(amountMinor: 75000),
+      );
+
+      expect(world.store.expenses, hasLength(1));
+      expect(world.store.expenses.single.totalMinor, 50000);
+      expect(world.store.occurrences, hasLength(1));
+    });
+
+    test('the edit is recorded in the activity feed', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(monthlySchedule());
+
+      await world.repositories.recurring.update(
+        world.store.schedules.single.copyWith(amountMinor: 75000),
+      );
+
+      expect(
+        world.store.activity.map((event) => event.action),
+        contains('recurring_updated'),
+      );
+    });
+
+    test('a cancelled schedule cannot be edited', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(monthlySchedule());
+      await world.repositories.recurring.cancel('r1');
+
+      await expectLater(
+        world.repositories.recurring.update(
+          world.store.schedules.single.copyWith(amountMinor: 75000),
+        ),
+        throwsA(
+          isA<RepositoryException>().having(
+            (error) => error.code,
+            'code',
+            RepositoryErrorCode.conflict,
+          ),
+        ),
+      );
+    });
+  });
+
+  group('the generated occurrences', () {
+    test('a monthly schedule runs once a month on the right day', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(
+        monthlySchedule(startDate: DateTime(2027, 1, 15, 9)),
+      );
+
+      await world.repositories.recurring.generateDue(
+        cribId: 'c1',
+        now: DateTime.utc(2027, 5, 20),
+      );
+
+      // January, February, March, April and May, the fifteenth of each.
+      // The occurrence keeps the scheduled local time of day, so the
+      // calendar day is what matters here.
+      final dates = world.store.occurrences
+          .map((occurrence) {
+            final due = occurrence.dueDate;
+            return '${due.year}-${due.month}-${due.day}';
+          })
+          .toList()
+        ..sort();
+      expect(dates, [
+        '2027-1-15',
+        '2027-2-15',
+        '2027-3-15',
+        '2027-4-15',
+        '2027-5-15',
+      ]);
+    });
+
+    test('every occurrence carries the amount and the payer', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(
+        monthlySchedule(startDate: DateTime(2027, 1, 15, 9)),
+      );
+
+      await world.repositories.recurring.generateDue(
+        cribId: 'c1',
+        now: DateTime.utc(2027, 3, 20),
+      );
+
+      expect(world.store.expenses, hasLength(3));
+      for (final expense in world.store.expenses) {
+        expect(expense.totalMinor, 50000);
+        expect(expense.currency, 'INR');
+        expect(expense.payerId, 'me');
+        expect(expense.shares, {'me': 50000});
+      }
+    });
+
+    test('running the generation twice does not create a second expense',
+        () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(
+        monthlySchedule(startDate: DateTime(2027, 1, 15, 9)),
+      );
+
+      await world.repositories.recurring.generateDue(
+        cribId: 'c1',
+        now: DateTime.utc(2027, 4, 20),
+      );
+      final first = world.store.expenses.length;
+      expect(first, 4);
+
+      await world.repositories.recurring.generateDue(
+        cribId: 'c1',
+        now: DateTime.utc(2027, 4, 20),
+      );
+
+      expect(world.store.expenses, hasLength(first));
+      expect(world.store.occurrences, hasLength(first));
+    });
+
+    test('a schedule that is not due yet generates nothing', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(
+        monthlySchedule(startDate: DateTime(2027, 1, 15, 9)),
+      );
+
+      await world.repositories.recurring.generateDue(
+        cribId: 'c1',
+        now: DateTime.utc(2027, 1, 14),
+      );
+
+      expect(world.store.expenses, isEmpty);
+      expect(world.store.occurrences, isEmpty);
+    });
+
+    test('a cancelled schedule generates nothing any more', () async {
+      final world = TestHarness(now: pausedAt);
+      await world.repositories.recurring.create(
+        monthlySchedule(startDate: DateTime(2027, 1, 15, 9)),
+      );
+      await world.repositories.recurring.cancel('r1');
+
+      await world.repositories.recurring.generateDue(
+        cribId: 'c1',
+        now: DateTime.utc(2027, 4, 20),
+      );
+
+      expect(world.store.expenses, isEmpty);
+    });
+  });
 }
