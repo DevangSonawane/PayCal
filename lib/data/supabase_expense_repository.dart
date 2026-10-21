@@ -1,3 +1,4 @@
+import 'package:paycal/core/notifications/notification_dispatcher.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/data/repositories.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -56,6 +57,9 @@ class SupabaseExpenseRepository implements ExpenseRepository {
     );
     final result = await getById((row as Map<String, dynamic>)['id'] as String);
     await list(cribId: expense.cribId);
+    // The other members hear about the expense right away instead of with
+    // the next sweep of the scheduler.
+    await NotificationDispatcher.instance.dispatchNow(_client);
     return result;
   }
 
@@ -73,6 +77,7 @@ class SupabaseExpenseRepository implements ExpenseRepository {
     );
     final result = await getById((row as Map<String, dynamic>)['id'] as String);
     await list(cribId: result.cribId);
+    await NotificationDispatcher.instance.dispatchNow(_client);
     return result;
   }
 

@@ -118,8 +118,8 @@ class ProfileScreen extends StatelessWidget {
   /// in backend wording; the member needs the next step.
   String _deleteAccountMessage(RepositoryException error) {
     if (error.message.toLowerCase().contains('crib')) {
-      return 'You still own a crib. Delete it from the crib menu first, '
-          'then delete your account.';
+      return 'You still own a crib. Hand it over to somebody else or delete '
+          'it from the crib menu first, then delete your account.';
     }
     return error.message;
   }

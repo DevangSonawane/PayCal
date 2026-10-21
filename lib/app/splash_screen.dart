@@ -3,6 +3,7 @@ import 'package:paycal/core/config/app_config.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
+import 'package:paycal/core/utils/deep_link.dart';
 import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/wedge_loader.dart';
 import 'package:paycal/features/onboarding/welcome_screen.dart';
@@ -39,6 +40,10 @@ class _SplashScreenState extends State<SplashScreen> {
               user == null ? const WelcomeScreen() : const MainShell(),
         ),
       );
+      // The link that started the app is handled now, when the app is on
+      // screen and the member can be asked to sign in.
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await DeepLinks.deliverInitialLink();
     });
   }
 

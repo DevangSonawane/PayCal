@@ -451,6 +451,72 @@ class InMemoryCribRepository implements CribRepository {
     return updated;
   }
 
+  @override
+  Future<void> leave(String id) async {
+    final actor = _requireUser(_store);
+    final crib = _liveCrib(_store, id);
+    if (crib.ownerId == actor.id) {
+      _unauthorized('Hand the crib over before you leave it.');
+    }
+    final member = crib.memberById(actor.id);
+    if (member == null || !member.isActive) {
+      _conflict('Membership');
+    }
+    final leftAt = _store.now;
+    final members = [
+      for (final item in crib.members)
+        if (item.id == actor.id)
+          item.copyWith(isActive: false, leftAt: leftAt)
+        else
+          item,
+    ];
+    final index = _store.cribs.indexWhere((item) => item.id == crib.id);
+    final updated = crib.copyWith(members: members, version: crib.version + 1);
+    _store.cribs[index] = updated;
+    // A schedule that is paid by the member who left is paused, exactly like
+    // when the owner removes a member.
+    final paused = _pauseSchedulesOf(_store, updated, actor.id, leftAt);
+    _recordActivity(_store, 'member_left', updated, actor.id);
+    for (final scheduleId in paused) {
+      _recordActivity(_store, 'recurring_paused', updated, scheduleId);
+    }
+  }
+
+  @override
+  Future<Crib> transferOwnership({
+    required String cribId,
+    required String newOwnerId,
+  }) async {
+    final actor = _requireUser(_store);
+    final crib = _liveCrib(_store, cribId);
+    _requireOwner(crib, actor.id);
+    if (newOwnerId == actor.id) {
+      _conflict('Ownership');
+    }
+    final newOwner = crib.memberById(newOwnerId);
+    if (newOwner == null || !newOwner.isActive) {
+      _unauthorized('The new owner has to be an active member.');
+    }
+    final members = [
+      for (final item in crib.members)
+        if (item.id == newOwnerId)
+          item.copyWith(role: MemberRole.owner)
+        else if (item.id == actor.id)
+          item.copyWith(role: MemberRole.member)
+        else
+          item,
+    ];
+    final index = _store.cribs.indexWhere((item) => item.id == crib.id);
+    final updated = crib.copyWith(
+      ownerId: newOwnerId,
+      members: members,
+      version: crib.version + 1,
+    );
+    _store.cribs[index] = updated;
+    _recordActivity(_store, 'ownership_transferred', updated, newOwnerId);
+    return updated;
+  }
+
   bool _sameMembership(List<Member> a, List<Member> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {

@@ -95,6 +95,29 @@ class SupabaseCribRepository implements CribRepository {
     return getById(cribId);
   }
 
+  @override
+  Future<void> leave(String id) async {
+    await _client.rpc('leave_crib', params: {'target_crib_id': id});
+    await list();
+  }
+
+  @override
+  Future<Crib> transferOwnership({
+    required String cribId,
+    required String newOwnerId,
+  }) async {
+    final row = await _client.rpc(
+      'transfer_crib_ownership',
+      params: {
+        'target_crib_id': cribId,
+        'new_owner_id': newOwnerId,
+      },
+    );
+    final result = await _map(row as Map<String, dynamic>);
+    await list();
+    return result;
+  }
+
   Future<Crib> mapRow(Map<String, dynamic> row) async {
     final memberships = await _client
         .from('crib_members')

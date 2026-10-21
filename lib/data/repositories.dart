@@ -87,6 +87,23 @@ abstract interface class CribRepository {
   /// Removes a member. The member stays in the crib history so earlier
   /// expenses and settlements keep validating. Owner only.
   Future<Crib> removeMember({required String cribId, required String memberId});
+
+  /// Leaves the crib on the member's own initiative.
+  ///
+  /// The membership keeps its history, so the expenses and settlements of the
+  /// past keep validating, but the member is never charged again. A schedule
+  /// the member paid for is paused. The owner of a crib has to hand it over
+  /// before they can leave it, so a crib never ends up without an owner.
+  Future<void> leave(String id);
+
+  /// Hands the crib over to another active member. Owner only.
+  ///
+  /// The new owner gets the owner rights and the old owner becomes a plain
+  /// member. Every other member of the crib is untouched.
+  Future<Crib> transferOwnership({
+    required String cribId,
+    required String newOwnerId,
+  });
 }
 
 abstract interface class ExpenseRepository {

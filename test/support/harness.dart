@@ -56,6 +56,7 @@ class TestHarness {
     List<Expense>? expenses,
     List<Settlement>? settlements,
     List<ActivityEvent>? activity,
+    List<RecurringPayment>? recurring,
     AuthUser? currentUser,
     DateTime? now,
   }) : store = InMemoryStore(
@@ -63,6 +64,7 @@ class TestHarness {
          expenses: expenses ?? [],
          settlements: settlements ?? [],
          activity: activity ?? [],
+         schedules: recurring,
          currentUser: currentUser ?? testUser('me'),
        ) {
     if (now != null) store.clock = () => now;

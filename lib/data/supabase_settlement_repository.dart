@@ -1,3 +1,4 @@
+import 'package:paycal/core/notifications/notification_dispatcher.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/data/repositories.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,6 +39,7 @@ class SupabaseSettlementRepository implements SettlementRepository {
     );
     final result = _map(row as Map<String, dynamic>);
     await list(cribId: result.cribId);
+    await NotificationDispatcher.instance.dispatchNow(_client);
     return result;
   }
 
@@ -64,6 +66,7 @@ class SupabaseSettlementRepository implements SettlementRepository {
     );
     final result = _map(row as Map<String, dynamic>);
     await list(cribId: result.cribId);
+    await NotificationDispatcher.instance.dispatchNow(_client);
     return result;
   }
 

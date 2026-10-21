@@ -1,14 +1,68 @@
 # Firebase push notifications
 
-The notification implementation is ready in code, but a Firebase project and
-its platform credentials are intentionally not committed. Until configuration
-is complete, keep `FIREBASE_PUSH_ENABLED` false (the default).
+Push notifications are live and verified on a real device.
 
-## One-time setup
+- Firebase project: `paycal-app-617842`
+- Android application id: `com.devangsonawane.paycal`
+- Edge Function: `supabase/functions/dispatch-notifications`
+- Outbox: `notification_outbox`, claimed atomically by the database
 
-1. Create or select the Firebase project for the production application IDs.
-   The Android identifier is currently `com.example.paycal`; replace that
-   placeholder before registering the Android app.
+## How a notification travels
+
+1. The write that triggers a notification (an expense, a settlement, an
+   invitation that was accepted) puts a row into `notification_outbox`.
+2. The app of the member who did it asks the Edge Function to deliver the
+   transactional notifications right away. The call never blocks the write and
+   never fails it.
+3. The Edge Function claims only the transactional rows, sends them through
+   FCM and marks them delivered. A member can never trigger a recurring
+   reminder early.
+4. The scheduler sweeps the whole outbox every fifteen minutes. That is the
+   pace of the recurring reminders, which are never delivered early.
+
+The Function serves three callers:
+
+| Caller | Header | What it may claim |
+| --- | --- | --- |
+| A signed-in member | `Authorization: Bearer <access token>` | transactional rows only |
+| The scheduler | `x-dispatch-secret: <NOTIFICATION_DISPATCH_SECRET>` | due reminders and every row |
+| Operations | the project's secret key | due reminders and every row |
+
+Anything else is answered with `401`.
+
+## What the backend sends
+
+- New, edited, and deleted expenses: every active crib member other than the actor.
+- Pending settlement request: recipient; confirmed: sender; cancelled: recipient.
+- Invitation accepted: crib owner.
+- Recurring payment due: assigned payer.
+
+`push_devices` and `notification_outbox` have RLS enabled and no client read
+policy. The Flutter app can only register its own token through an authenticated
+RPC; the Edge Function is the sole sender.
+
+## The notification channel
+
+The channel `paycal_reminders` is created by `PayCalApplication`, not by the
+activity. A push that reaches the app while it is closed is handled by the
+messaging service, which runs before any activity does; a channel that only
+the activity created would not exist yet at that moment and the reminder would
+land in a silent fallback channel that never shows up.
+
+The app asks for the `POST_NOTIFICATIONS` permission the first time the device
+talks to the backend, because notifications are on by default. Without the
+permission the device is registered with the backend, but the system drops
+every notification before it is ever shown.
+
+## Verified on a device
+
+An expense added by another member reached the phone within seconds with the
+title `PayCal update` and the body of the expense, on the `paycal_reminders`
+channel with high importance.
+
+## Setup for another environment
+
+1. Create or select the Firebase project for the production application ids.
 2. From the Flutter project root, run `flutterfire configure`. Commit the
    generated platform configuration files and `lib/firebase_options.dart` only
    if it contains public app configuration; never commit a service-account key.
@@ -31,22 +85,25 @@ is complete, keep `FIREBASE_PUSH_ENABLED` false (the default).
    ```
 
 6. Add a Supabase scheduled invocation of `dispatch-notifications` every
-   minute, authenticated with the project secret key in the `apikey` header.
-   That cadence delivers event notifications promptly and checks due recurring
-   payments at their configured local minute. The function can safely run more
-   than once: jobs are leased atomically and due reminders have an idempotency
-   key.
-7. Build with `--dart-define=FIREBASE_PUSH_ENABLED=true`. On first opt-in the
-   app requests the OS permission and securely registers its FCM device token
-   with Supabase.
+   fifteen minutes, authenticated with the dispatch secret. The Function can
+   safely run more than once: jobs are leased atomically and due reminders have
+   an idempotency key.
 
-## What the backend sends
+   ```sh
+   select cron.schedule(
+     'dispatch-notifications-every-15-minutes',
+     '*/15 * * * *',
+     $$
+     select net.http_post(
+       url := (select decrypted_secret from vault.decrypted_secrets where name = 'notification_dispatch_url'),
+       headers := jsonb_build_object(
+         'content-type', 'application/json',
+         'x-dispatch-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'notification_dispatch_secret')
+       ),
+       body := '{}'::jsonb
+     );
+     $$
+   );
+   ```
 
-- New, edited, and deleted expenses: every active crib member other than the actor.
-- Pending settlement request: recipient; confirmed: sender; cancelled: recipient.
-- Invitation accepted: crib owner.
-- Recurring payment due: assigned payer.
-
-`push_devices` and `notification_outbox` have RLS enabled and no client read
-policy. The Flutter app can only register its own token through an authenticated
-RPC; the Edge Function is the sole sender.
+7. Build with `--dart-define=FIREBASE_PUSH_ENABLED=true`.

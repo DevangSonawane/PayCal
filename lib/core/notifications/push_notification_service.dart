@@ -38,7 +38,7 @@ class PushNotificationService {
         unawaited(_syncToken());
       });
       _ready = true;
-      await _syncToken(requestPermission: false);
+      await _syncToken();
     } on FirebaseException catch (error) {
       // Missing platform configuration is expected on a platform without a
       // Firebase project (a desktop build, for example).
@@ -65,7 +65,17 @@ class PushNotificationService {
     final client = _client;
     if (!_ready || client == null || client.auth.currentUser == null) return;
 
-    if (requestPermission) {
+    var ask = requestPermission;
+    if (!ask && AppSettings.instance.notificationsOn) {
+      // Notifications are on by default, so the system permission is asked
+      // for the first time the device talks to the backend. Without it the
+      // device is registered, but the system drops every notification the
+      // backend sends before it is ever shown.
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      ask = settings.authorizationStatus == AuthorizationStatus.notDetermined ||
+          settings.authorizationStatus == AuthorizationStatus.denied;
+    }
+    if (ask) {
       final permission = await FirebaseMessaging.instance.requestPermission();
       if (permission.authorizationStatus == AuthorizationStatus.denied) {
         AppSettings.instance.update(notificationsOn: false);

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:paycal/core/notifications/notification_dispatcher.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/data/repositories.dart';
 import 'package:paycal/data/supabase_crib_repository.dart';
@@ -60,15 +61,35 @@ class SupabaseInvitationRepository implements InvitationRepository {
 
   @override
   Future<Crib> accept(String token) async {
-    final row = await _client.rpc(
-      'accept_invitation',
-      params: {'invitation_token': token},
-    );
-    final crib = await _cribs.mapRow(row as Map<String, dynamic>);
+    final Map<String, dynamic> row;
+    try {
+      final result = await _client.rpc(
+        'accept_invitation',
+        params: {'invitation_token': token},
+      );
+      row = result as Map<String, dynamic>;
+    } on PostgrestException catch (error) {
+      // The server refuses a revoked, expired or already used token with a
+      // permission error. That is a dead invitation, not a broken app.
+      if (error.code == '42501') {
+        throw const RepositoryException(
+          RepositoryErrorCode.unauthorized,
+          'That invitation is invalid, expired, or unavailable',
+        );
+      }
+      throw const RepositoryException(
+        RepositoryErrorCode.transient,
+        'Could not reach the server to join the crib.',
+      );
+    }
+    final crib = await _cribs.mapRow(row);
     // The signed-in member is a member of the crib now, so the cached cribs
     // have to be refreshed: the member list is read from the cache and the
     // new member would stay invisible everywhere else.
     await _cribs.list();
+    // The crib owner gets a "new member" notification; the device that
+    // accepted the invitation asks for it to go out right away.
+    await NotificationDispatcher.instance.dispatchNow(_client);
     return crib;
   }
 

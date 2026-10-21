@@ -21,11 +21,42 @@ function json(message: unknown, status = 200) {
   })
 }
 
+function bearerToken(request: Request): string | null {
+  const header = request.headers.get('authorization')
+  if (!header) return null
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim())
+  return match ? match[1].trim() : null
+}
+
+// The role a token carries, read from the token itself. The project secret
+// key is not always a JWT, so the role is only checked when it can be read.
+function tokenRole(token: string | null): string | null {
+  if (!token) return null
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.role === 'string' ? payload.role : null
+  } catch {
+    return null
+  }
+}
+
 Deno.serve(async (request) => {
-  // The function is invoked by a scheduler with the project's secret key.
-  const isServiceRole = request.headers.get('apikey') === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  // The scheduler sweeps the whole outbox with the project's secret key.
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const requestKey = request.headers.get('apikey')
+  const token = bearerToken(request)
+  const isServiceRole =
+    (serviceKey != null && (requestKey === serviceKey || token === serviceKey)) ||
+    tokenRole(token) === 'service_role' ||
+    tokenRole(requestKey) === 'service_role'
   const isScheduler = dispatchSecret != null && request.headers.get('x-dispatch-secret') === dispatchSecret
-  if (!isServiceRole && !isScheduler) {
+  // A signed-in member may ask for their own notifications to be delivered
+  // right away. The sweep stays with the scheduler, so a member can never
+  // trigger the delivery of somebody else's notifications.
+  const isMember = !isServiceRole && !isScheduler
+  if (!isServiceRole && !isScheduler && !bearerToken(request)) {
     return json({ error: 'Unauthorized' }, 401)
   }
   if (!serviceAccountJson) return json({ error: 'FIREBASE_SERVICE_ACCOUNT_JSON is not configured' }, 500)
@@ -36,10 +67,30 @@ Deno.serve(async (request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  // The scheduler can retry safely; due reminders are idempotent per schedule/date.
-  const due = await admin.rpc('process_push_due_reminders')
-  if (due.error) return json({ error: due.error.message }, 500)
-  const claimed = await admin.rpc('claim_push_notification_jobs', { batch_size: 100 })
+  let claimed: { data: unknown; error: { message: string } | null }
+  if (isMember) {
+    // A member's device asks for the transactional notifications to go out
+    // now. The member's access token proves they are signed in; the outbox
+    // rows claimed here are the transactional ones, so a recurring reminder
+    // keeps the pace of the scheduler.
+    const token = bearerToken(request)!
+    const user = await admin.auth.getUser(token)
+    if (user.error || !user.data?.user) {
+      return json({ error: 'Unauthorized' }, 401)
+    }
+    // The claim runs as the member, so the database knows who asked for it.
+    const asMember = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } },
+    )
+    claimed = await asMember.rpc('claim_push_transactional_jobs', { batch_size: 100 })
+  } else {
+    // The scheduler can retry safely; due reminders are idempotent per schedule/date.
+    const due = await admin.rpc('process_push_due_reminders')
+    if (due.error) return json({ error: due.error.message }, 500)
+    claimed = await admin.rpc('claim_push_notification_jobs', { batch_size: 100 })
+  }
   if (claimed.error) return json({ error: claimed.error.message }, 500)
 
   const auth = new GoogleAuth({
@@ -48,7 +99,8 @@ Deno.serve(async (request) => {
   })
   const client = await auth.getClient()
   let delivered = 0
-  for (const job of (claimed.data ?? []) as Job[]) {
+  const jobs = (claimed.data ?? []) as Job[]
+  for (const job of jobs) {
     const devices = await admin
       .from('push_devices')
       .select('id, token, platform')
@@ -85,7 +137,7 @@ Deno.serve(async (request) => {
     }
     await mark(admin, job.id, error ? 'failed' : 'delivered', error)
   }
-  return json({ claimed: claimed.data?.length ?? 0, delivered })
+  return json({ claimed: jobs.length, delivered })
 })
 
 async function mark(
