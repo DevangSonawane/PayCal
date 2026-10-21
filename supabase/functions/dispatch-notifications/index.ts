@@ -70,7 +70,7 @@ Deno.serve(async (request) => {
               data: Object.fromEntries(
                 Object.entries(job.data ?? {}).map(([key, value]) => [key, String(value)]),
               ),
-              android: { priority: 'high' },
+              android: { priority: 'high', notification: { channel_id: 'paycal_reminders' } },
               apns: { payload: { aps: { sound: 'default' } } },
             },
           },

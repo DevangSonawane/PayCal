@@ -27,10 +27,15 @@ class AppConfig {
   static bool get hasSupabaseConfiguration =>
       supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
 
-  /// Firebase is opt-in at build time so development builds without the
-  /// platform Firebase files keep working.
+  /// Whether the app talks to Firebase Cloud Messaging.
+  ///
+  /// The Firebase project and its platform configuration are part of the
+  /// repository, so push is on by default. A build that has no Firebase
+  /// configuration can still switch it off with
+  /// `--dart-define=FIREBASE_PUSH_ENABLED=false`.
   static const bool firebasePushEnabled = bool.fromEnvironment(
     'FIREBASE_PUSH_ENABLED',
+    defaultValue: true,
   );
 
   /// How long a shared invitation stays valid.

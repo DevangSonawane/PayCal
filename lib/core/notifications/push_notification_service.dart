@@ -40,8 +40,13 @@ class PushNotificationService {
       _ready = true;
       await _syncToken(requestPermission: false);
     } on FirebaseException catch (error) {
-      // Missing platform configuration is expected until Firebase is linked.
+      // Missing platform configuration is expected on a platform without a
+      // Firebase project (a desktop build, for example).
       debugPrint('Push notifications unavailable: ${error.code}');
+    } catch (error) {
+      // A platform without the Firebase plugin at all must not stop the app
+      // from starting.
+      debugPrint('Push notifications unavailable: $error');
     }
   }
 
