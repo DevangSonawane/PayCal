@@ -7,6 +7,7 @@ import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/wedge_loader.dart';
 import 'package:paycal/features/onboarding/welcome_screen.dart';
 import 'package:paycal/features/shell/main_shell.dart';
+import 'package:paycal/features/auth/auth_identity.dart';
 import 'package:paycal/data/in_memory_repositories.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
       final user = await PayCalRepositories.instance.auth.restoreSession();
       if (user != null) {
+        syncAppIdentity(user);
         try {
           await PayCalRepositories.instance.hydrate();
         } catch (_) {

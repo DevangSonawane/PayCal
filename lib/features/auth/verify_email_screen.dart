@@ -7,6 +7,8 @@ import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/quiet_text_button.dart';
+import 'package:paycal/data/in_memory_repositories.dart';
+import 'package:paycal/data/repositories.dart';
 import 'package:paycal/features/auth/notifications_sheet.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 
@@ -27,31 +29,92 @@ class VerifyEmailScreen extends StatefulWidget {
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   int _cooldown = 0;
   Timer? _timer;
+  Timer? _poll;
+  bool _waiting = false;
+  String? _notice;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.google) {
+      // Google is already verified — skip ahead silently on first frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _continue());
+    } else {
+      _startPolling();
+    }
+  }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _poll?.cancel();
     super.dispose();
   }
 
-  void _resend() {
-    if (_cooldown > 0) return;
-    setState(() => _cooldown = 30);
-    _timer = Timer.periodic(Duration(seconds: 1), (t) {
-      if (_cooldown <= 1) {
-        t.cancel();
-        setState(() => _cooldown = 0);
-      } else {
-        setState(() => _cooldown--);
+  /// Watches for the session the confirmation link produces.
+  ///
+  /// The link opens the app, which exchanges the token and signs the member
+  /// in. Until that happened there is no session, so the screen has to wait
+  /// instead of pretending that the mail was confirmed.
+  void _startPolling() {
+    _poll?.cancel();
+    _poll = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!mounted) return;
+      final session = await PayCalRepositories.instance.auth.restoreSession();
+      if (!mounted) return;
+      if (session != null) {
+        _poll?.cancel();
+        _go();
       }
     });
   }
 
+  Future<void> _resend() async {
+    if (_cooldown > 0) return;
+    try {
+      await PayCalRepositories.instance.auth.resendConfirmation(widget.email);
+    } on RepositoryException catch (error) {
+      if (mounted) _showError(error.message);
+      return;
+    } catch (_) {
+      if (mounted) _showError('Could not send the email again. Try later.');
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _cooldown = 30;
+      _notice = null;
+    });
+    _timer = Timer.periodic(Duration(seconds: 1), (t) {
+      if (_cooldown <= 1) {
+        t.cancel();
+        if (mounted) setState(() => _cooldown = 0);
+      } else {
+        if (mounted) setState(() => _cooldown--);
+      }
+    });
+  }
+
+  void _showError(String message) =>
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+
   Future<void> _continue() async {
     if (!widget.google) {
-      // Simulate polling success.
-      await Future.delayed(Duration(milliseconds: 400));
+      final session = await PayCalRepositories.instance.auth.restoreSession();
+      if (!mounted) return;
+      if (session == null) {
+        setState(() {
+          _waiting = true;
+          _notice = 'Still waiting for the link. Open it, then tap continue.';
+        });
+        return;
+      }
     }
+    _go();
+  }
+
+  void _go() {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => NotificationsPage(draft: widget.draft)),
@@ -60,10 +123,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.google) {
-      // Google is already verified — skip ahead silently on first frame.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _continue());
-    }
     return Scaffold(
       backgroundColor: AppPalette.current.page,
       body: CustomPaint(
@@ -119,7 +178,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         'Check your inbox',
@@ -131,17 +190,27 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
+                SizedBox(height: AppSpacing.md),
                 Text(
                   'We sent a verification link to ${widget.email}. Tap it and you are in.',
                   style: AppTypography.body.copyWith(
                     color: AppPalette.current.grey,
                   ),
                 ),
+                if (_notice != null) ...[
+                  SizedBox(height: AppSpacing.md),
+                  Text(
+                    _notice!,
+                    style: AppTypography.body.copyWith(
+                      color: AppPalette.current.pink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 PrimaryButton(
-                  label: 'I verified — continue',
-                  onPressed: _continue,
+                  label: _waiting ? 'Still waiting…' : 'I verified — continue',
+                  onPressed: _waiting ? null : _continue,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Center(

@@ -42,12 +42,8 @@ class Member {
 
   /// Re-adds a previously removed member. Membership history keeps the
   /// original removal marker in the activity feed.
-  Member reactivated() => Member(
-    id: id,
-    name: name,
-    role: role,
-    isActive: true,
-  );
+  Member reactivated() =>
+      Member(id: id, name: name, role: role, isActive: true);
 
   String get initials {
     final parts = name
@@ -66,10 +62,21 @@ class Member {
 }
 
 class AuthUser {
-  const AuthUser({required this.id, required this.name, required this.email});
+  const AuthUser({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.hasPassword = true,
+  });
   final String id;
   final String name;
   final String email;
+
+  /// Whether the account can sign in with an email address and a password.
+  ///
+  /// An account that was created with Google has no password yet, so the app
+  /// asks for one before it lets the member sign in that way later.
+  final bool hasPassword;
 }
 
 enum InvitationStatus { active, revoked, expired, accepted }
@@ -84,6 +91,7 @@ class Invitation {
     this.revoked = false,
     this.acceptedById,
     this.acceptedAt,
+    this.secretToken,
   });
 
   /// The opaque, random credential. It is also the record id so a crib id can
@@ -96,9 +104,10 @@ class Invitation {
   final bool revoked;
   final String? acceptedById;
   final DateTime? acceptedAt;
+  final String? secretToken;
 
   /// The secret that gets shared in invite links.
-  String get token => id;
+  String get token => secretToken ?? id;
 
   bool get isAccepted => acceptedById != null;
   bool isExpiredAt(DateTime now) => !expiresAt.isAfter(now);
@@ -123,6 +132,7 @@ class Invitation {
     revoked: revoked ?? this.revoked,
     acceptedById: acceptedById ?? this.acceptedById,
     acceptedAt: acceptedAt ?? this.acceptedAt,
+    secretToken: secretToken,
   );
 }
 
@@ -336,9 +346,7 @@ class RecurringPayment {
   }) : localHour = localHour ?? startDate.hour,
        localMinute = localMinute ?? startDate.minute,
        anchorDay = anchorDay ?? startDate.day,
-       payerId = identical(payerId, _unset)
-           ? createdById
-           : payerId as String?;
+       payerId = identical(payerId, _unset) ? createdById : payerId as String?;
 
   /// A missing value that means "keep the current one" or "use the default".
   ///

@@ -52,10 +52,12 @@ class _InviteScreenState extends State<InviteScreen> {
       final active = existing
           .where(
             (item) =>
-                item.statusAt(DateTime.now()) == InvitationStatus.active,
+                item.statusAt(DateTime.now()) == InvitationStatus.active &&
+                item.secretToken != null,
           )
           .firstOrNull;
-      final token = active?.token ??
+      final token =
+          active?.token ??
           (await repositories.invitations.create(
             cribId: crib.id,
             createdById: meId,
@@ -302,7 +304,10 @@ class _InviteScreenState extends State<InviteScreen> {
                   label: 'Share invite link',
                   onPressed: () async {
                     if (link.isEmpty) {
-                      showAppToast(context, 'Your link is still being prepared');
+                      showAppToast(
+                        context,
+                        'Your link is still being prepared',
+                      );
                       return;
                     }
                     Clipboard.setData(ClipboardData(text: link));

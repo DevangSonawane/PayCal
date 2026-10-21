@@ -21,6 +21,10 @@ abstract interface class AuthRepository {
   AuthUser? get currentUser;
   Future<AuthUser?> restoreSession();
   Future<AuthUser> signIn({required String email, required String password});
+
+  /// Starts the browser-based Google OAuth flow. The app resumes through the
+  /// configured custom URL scheme and receives the session from Supabase.
+  Future<void> signInWithGoogle();
   Future<AuthUser?> signUp({
     required String email,
     required String password,
@@ -29,7 +33,21 @@ abstract interface class AuthRepository {
   Future<void> signOut();
   Future<void> deleteAccount();
   Future<void> resetPassword({required String email});
+
+  /// Sends the account confirmation mail once more.
+  Future<void> resendConfirmation(String email);
+
   Future<AuthUser> updateProfile({required String name, required String email});
+
+  /// Sets a password for the signed-in member.
+  ///
+  /// A member who arrived through Google has no password yet. Setting one
+  /// lets them sign in with their email address later.
+  Future<void> setPassword(String password);
+
+  /// Updates the display name of the signed-in member without touching the
+  /// email address.
+  Future<void> setDisplayName(String name);
 }
 
 /// Crib metadata and membership.

@@ -1,4 +1,4 @@
-package com.example.paycal
+package com.devangsonawane.paycal
 
 import io.flutter.embedding.android.FlutterActivity
 

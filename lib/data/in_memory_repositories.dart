@@ -4,6 +4,10 @@ import 'package:paycal/data/repositories.dart';
 import 'package:paycal/data/supabase_auth_repository.dart';
 import 'package:paycal/data/supabase_crib_repository.dart';
 import 'package:paycal/data/supabase_expense_repository.dart';
+import 'package:paycal/data/supabase_settlement_repository.dart';
+import 'package:paycal/data/supabase_invitation_repository.dart';
+import 'package:paycal/data/supabase_activity_repository.dart';
+import 'package:paycal/data/supabase_recurring_payment_repository.dart';
 import 'package:paycal/domain/financial_ledger.dart';
 import 'package:paycal/domain/recurring_scheduler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
@@ -106,13 +110,13 @@ class PayCalRepositories {
       auth: SupabaseAuthRepository(client),
       cribs: SupabaseCribRepository(client),
       expenses: SupabaseExpenseRepository(client),
-      // These repositories will be moved to their RPC-backed counterparts in
-      // the next backend slice.  Keeping them empty is safer than presenting
-      // prototype financial data to a real signed-in account.
-      settlements: InMemorySettlementRepository(emptyStore),
-      activity: InMemoryActivityRepository(emptyStore),
-      invitations: InMemoryInvitationRepository(emptyStore),
-      recurring: InMemoryRecurringPaymentRepository(emptyStore),
+      settlements: SupabaseSettlementRepository(client),
+      activity: SupabaseActivityRepository(client),
+      invitations: SupabaseInvitationRepository(
+        client,
+        SupabaseCribRepository(client),
+      ),
+      recurring: SupabaseRecurringPaymentRepository(client),
     );
   }
 
@@ -138,6 +142,12 @@ class PayCalRepositories {
   /// The id of the signed-in member. Empty when nobody is signed in.
   String get currentUserId => auth.currentUser?.id ?? '';
 
+  /// Whether this repository set talks to the live Supabase backend.
+  ///
+  /// The offline prototype answers the same calls, so screens have to ask
+  /// before they reach for a Supabase client that was never started.
+  bool get isRemote => auth is SupabaseAuthRepository;
+
   final InMemoryStore store;
   final AuthRepository auth;
   final CribRepository cribs;
@@ -151,6 +161,12 @@ class PayCalRepositories {
 class InMemoryAuthRepository implements AuthRepository {
   InMemoryAuthRepository(this._store);
   final InMemoryStore _store;
+
+  /// The accounts this prototype knows about. A sign-in only succeeds for an
+  /// account that exists, so the offline build cannot let anybody in with an
+  /// arbitrary email.
+  final Map<String, String> _passwords = {};
+
   @override
   AuthUser? get currentUser => _store.currentUser;
 
@@ -168,6 +184,20 @@ class InMemoryAuthRepository implements AuthRepository {
         'A valid email and password are required.',
       );
     }
+    final key = email.trim().toLowerCase();
+    final known = _passwords[key];
+    if (known == null) {
+      throw const RepositoryException(
+        RepositoryErrorCode.notFound,
+        'There is no account with that email. Create one instead.',
+      );
+    }
+    if (known != password) {
+      throw const RepositoryException(
+        RepositoryErrorCode.unauthorized,
+        'That email and password do not match an account. Check them and try again.',
+      );
+    }
     final user = AuthUser(
       id: _store.currentUser?.id ?? 'me',
       name: _store.currentUser?.name ?? email.split('@').first,
@@ -175,6 +205,15 @@ class InMemoryAuthRepository implements AuthRepository {
     );
     _store.currentUser = user;
     return user;
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    _store.currentUser ??= const AuthUser(
+      id: 'google-user',
+      name: 'Google user',
+      email: 'google-user@example.com',
+    );
   }
 
   @override
@@ -188,16 +227,61 @@ class InMemoryAuthRepository implements AuthRepository {
     required String email,
     required String password,
     required String displayName,
-  }) async => signIn(email: email, password: password);
+  }) async {
+    final key = email.trim().toLowerCase();
+    if (_passwords.containsKey(key)) {
+      throw const RepositoryException(
+        RepositoryErrorCode.conflict,
+        'An account with that email already exists. Sign in instead.',
+      );
+    }
+    _passwords[key] = password;
+    final user = await signIn(email: email, password: password);
+    _store.currentUser = AuthUser(
+      id: user.id,
+      name: displayName.trim().isEmpty ? user.name : displayName.trim(),
+      email: user.email,
+    );
+    return _store.currentUser;
+  }
 
   @override
   Future<void> resetPassword({required String email}) async {}
 
   @override
+  Future<void> resendConfirmation(String email) async {}
+
+  @override
   Future<AuthUser> updateProfile({
     required String name,
     required String email,
-  }) => signIn(email: email, password: 'local-test-password');
+  }) async {
+    final previous = _store.currentUser;
+    _store.currentUser = AuthUser(
+      id: previous?.id ?? 'me',
+      name: name.trim(),
+      email: email.trim(),
+    );
+    return _store.currentUser!;
+  }
+
+  @override
+  Future<void> setPassword(String password) async {
+    final email = _store.currentUser?.email;
+    if (email == null) return;
+    _passwords[email.trim().toLowerCase()] = password;
+  }
+
+  @override
+  Future<void> setDisplayName(String name) async {
+    final user = _store.currentUser;
+    if (user == null || name.trim().isEmpty) return;
+    _store.currentUser = AuthUser(
+      id: user.id,
+      name: name.trim(),
+      email: user.email,
+    );
+  }
 }
 
 class InMemoryCribRepository implements CribRepository {

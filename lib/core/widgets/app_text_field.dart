@@ -17,6 +17,7 @@ class AppTextField extends StatelessWidget {
     this.textInputAction = TextInputAction.next,
     this.onFieldSubmitted,
     this.suffix,
+    this.readOnly = false,
   });
 
   final String label;
@@ -30,6 +31,10 @@ class AppTextField extends StatelessWidget {
   final TextInputAction textInputAction;
   final ValueChanged<String>? onFieldSubmitted;
   final Widget? suffix;
+
+  /// Shows the value but keeps it out of reach of the keyboard. Used for
+  /// fields the member may read but not change, like a verified email.
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +59,7 @@ class AppTextField extends StatelessWidget {
           autofillHints: autofillHints,
           textInputAction: textInputAction,
           onFieldSubmitted: onFieldSubmitted,
+          readOnly: readOnly,
           style: AppTypography.bodyLarge.copyWith(
             color: AppPalette.current.ink,
           ),

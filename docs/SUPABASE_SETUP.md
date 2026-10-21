@@ -15,6 +15,11 @@ from the Supabase Connect panel, and run the app with:
 flutter run --dart-define-from-file=.env.json
 ```
 
+The project URL and the publishable key are already compiled into
+`lib/core/config/app_config.dart`, so a plain `flutter run` talks to the live
+project too. The `.env.json` file is only needed to point the app at another
+project.
+
 `SUPABASE_PUBLISHABLE_KEY` is safe to ship because database access is limited
 by RLS. Never add a service-role or secret key to this file, source control, or
 the Flutter app.

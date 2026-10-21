@@ -24,6 +24,7 @@ import 'package:paycal/domain/financial_ledger.dart';
 import 'package:paycal/domain/recurring_scheduler.dart';
 import 'package:paycal/features/expenses/expense_detail_screen.dart';
 import 'package:paycal/features/expenses/split_share_editor.dart';
+import 'package:paycal/features/cribs/invite_link_sheet.dart';
 import 'package:paycal/features/settlements/settle_up_sheet.dart';
 
 class _DPalette {
@@ -348,6 +349,33 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
                 ],
               ),
             ),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          OptionTile(
+            title: 'Invite someone',
+            support: _isOwner
+                ? 'Get a private link that expires in 7 days'
+                : 'Only the Crib Owner can invite new people',
+            leading: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: _DPalette.current.lime,
+                shape: BoxShape.circle,
+                border: Border.all(color: _DPalette.current.ink, width: 1.5),
+              ),
+              child: Icon(
+                Icons.link_rounded,
+                size: 18,
+                color: _DPalette.current.ink,
+              ),
+            ),
+            onTap: _isOwner
+                ? () {
+                    Navigator.of(sheetContext).pop();
+                    showInviteLinkSheet(context, crib: crib);
+                  }
+                : null,
           ),
           if (recurring.isNotEmpty) ...[
             SizedBox(height: AppSpacing.lg),

@@ -31,6 +31,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 .env.json
+supabase/functions/.env
 /build/
 /coverage/
 

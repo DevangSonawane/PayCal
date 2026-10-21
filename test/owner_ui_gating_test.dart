@@ -24,8 +24,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Delete crib'), findsOneWidget);
-    expect(find.text('Add someone'), findsOneWidget);
-    expect(find.text('Share invite link'), findsOneWidget);
+    expect(find.text('Invite someone'), findsOneWidget);
     expect(
       find.widgetWithText(PrimaryButton, 'Save changes'),
       findsOneWidget,
@@ -45,8 +44,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Delete crib'), findsNothing);
-    expect(find.text('Add someone'), findsNothing);
-    expect(find.text('Share invite link'), findsNothing);
+    expect(find.text('Invite someone'), findsNothing);
     expect(find.widgetWithText(PrimaryButton, 'Save changes'), findsNothing);
     expect(find.widgetWithText(PrimaryButton, 'Close'), findsOneWidget);
     // The members are still listed, so the member can see who is in the crib.

@@ -47,9 +47,9 @@ define how long anything is kept.
 
 - Device-local profile data (the cached display name and email in
   `AppSettings`) is cleared on the device.
-- The in-memory prototype has no deletion call. `AuthRepository` only exposes
-  `signOut`. A deletion contract has to be added together with the backend;
-  the in-memory checks are not a security boundary
+- The in-memory prototype has no deletion call: its `deleteAccount()` is a
+  `signOut()`. The real deletion is the `delete-account` edge function, so the
+  in-memory checks are not a security boundary
   (`BACKEND_SECURITY_REQUIREMENTS.md`).
 
 ## Not decided, and why
@@ -67,7 +67,16 @@ legal/privacy task, and the implementation must follow whatever it produces.
 
 ## Open implementation work
 
-- A `UserDirectory` contract to look up members by id, and a deletion contract
-  on the repository layer. Both are blocked on the backend provider choice.
-- A "delete account" entry point in the profile screen, with the confirmation
-  flow and the wording of what is kept and what is removed.
+- A `UserDirectory` contract to look up members by id. Still open.
+- The retention numbers of the table above. Still a legal/privacy task.
+
+## What is implemented
+
+- `supabase/functions/delete-account` closes the memberships, anonymises the
+  profile, revokes the pending invitations and bans the account. GoTrue
+  removed the admin sign-out endpoint, so the ban is what invalidates the
+  sessions: every refresh of a banned account is refused with `user_banned`.
+  An account that still owns an active crib is refused with `409`, and the
+  profile screen turns that into the next step for the member.
+- `AuthRepository.deleteAccount()` calls the function, and the profile screen
+  offers the entry point behind a confirmation sheet.

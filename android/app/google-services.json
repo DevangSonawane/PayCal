@@ -1,0 +1,19 @@
+{
+  "project_info": {
+    "project_number": "70627915425",
+    "project_id": "paycal-app-617842",
+    "storage_bucket": "paycal-app-617842.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70627915425:android:e9457eec3dca5e87aee2e0",
+        "android_client_info": { "package_name": "com.devangsonawane.paycal" }
+      },
+      "oauth_client": [],
+      "api_key": [{ "current_key": "AIzaSyAursO0URRlZup74jfXOvAl6lON4hatVMk" }],
+      "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+    }
+  ],
+  "configuration_version": "1"
+}

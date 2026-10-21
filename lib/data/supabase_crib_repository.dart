@@ -95,7 +95,7 @@ class SupabaseCribRepository implements CribRepository {
     return getById(cribId);
   }
 
-  Future<Crib> _map(Map<String, dynamic> row) async {
+  Future<Crib> mapRow(Map<String, dynamic> row) async {
     final memberships = await _client
         .from('crib_members')
         .select('user_id, left_at, profiles(display_name)')
@@ -126,6 +126,8 @@ class SupabaseCribRepository implements CribRepository {
           : DateTime.parse(row['deleted_at'] as String),
     );
   }
+
+  Future<Crib> _map(Map<String, dynamic> row) => mapRow(row);
 
   Never _notFound(String type) => throw RepositoryException(
     RepositoryErrorCode.notFound,

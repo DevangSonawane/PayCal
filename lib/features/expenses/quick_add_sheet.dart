@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:paycal/core/config/app_config.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/settings/app_settings.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
@@ -88,6 +89,20 @@ class _QuickAddFormState extends State<_QuickAddForm> {
   /// The signed-in member.
   String get _meId => PayCalRepositories.instance.currentUserId;
 
+  /// The members an expense of the selected crib is split between.
+  ///
+  /// An explicit split wins; otherwise every active member of the crib
+  /// shares the expense. The list is empty when no crib is picked or when the
+  /// crib has no active members — callers must cope with that instead of
+  /// dividing by its length.
+  List<String> get _splitIds {
+    final crib = MemberDirectory.cribById(_cribId ?? '');
+    if (crib == null) return const <String>[];
+    return widget.initialSplitWithIds ?? [
+      for (final m in crib.activeMembers) m.id,
+    ];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -124,11 +139,22 @@ class _QuickAddFormState extends State<_QuickAddForm> {
       return;
     }
     final payee = this.payee;
-    final splitIds =
-        widget.initialSplitWithIds ?? [for (final m in crib.activeMembers) m.id];
-    final shares = payee != null
-        ? {payee.id: minor}
-        : _equalShares(splitIds, minor);
+    final splitIds = _splitIds;
+    final Map<String, int> shares;
+    if (payee != null) {
+      shares = {payee.id: minor};
+    } else {
+      if (splitIds.isEmpty) {
+        showAppToast(context, 'Nobody to split with — invite someone first');
+        return;
+      }
+      try {
+        shares = _equalShares(splitIds, minor);
+      } on FinancialValidationException catch (error) {
+        showAppToast(context, error.message);
+        return;
+      }
+    }
     final desc = _desc.text.trim().isEmpty
         ? (payee == null ? '$_type expense' : 'Sent to ${payee.name}')
         : _desc.text.trim();
@@ -172,11 +198,7 @@ class _QuickAddFormState extends State<_QuickAddForm> {
   @override
   Widget build(BuildContext context) {
     final crib = MemberDirectory.cribById(_cribId ?? '');
-    final splitIds = crib == null
-        ? const <String>[]
-        : (widget.initialSplitWithIds ?? [
-            for (final m in crib.activeMembers) m.id,
-          ]);
+    final splitIds = _splitIds;
     final payeeNames = [for (final id in splitIds) MemberDirectory.nameFor(id)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,18 +278,26 @@ class _QuickAddFormState extends State<_QuickAddForm> {
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: [
-            for (final b in _cribs)
-              StickerPill(
-                label: b.name,
-                selected: _cribId == b.id,
-                onTap: () => setState(() => _cribId = b.id),
-              ),
-          ],
-        ),
+        if (_cribs.isEmpty)
+          Text(
+            'You have no cribs yet — create one to start splitting.',
+            style: AppTypography.caption.copyWith(
+              color: AppPalette.current.grey,
+            ),
+          )
+        else
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final b in _cribs)
+                StickerPill(
+                  label: b.name,
+                  selected: _cribId == b.id,
+                  onTap: () => setState(() => _cribId = b.id),
+                ),
+            ],
+          ),
         const SizedBox(height: AppSpacing.lg),
         Text(
           'What type?',
@@ -316,6 +346,7 @@ class _QuickAddFormState extends State<_QuickAddForm> {
           amount: _amount,
           ways: payee == null ? splitIds.length : 1,
           isPayee: payee != null,
+          currency: crib?.currency ?? AppConfig.defaultCurrency,
         ),
         const SizedBox(height: AppSpacing.lg),
         PrimaryButton(label: 'Add expense', onPressed: _submit),
@@ -329,10 +360,12 @@ class _Preview extends StatefulWidget {
     required this.amount,
     required this.ways,
     this.isPayee = false,
+    this.currency = 'INR',
   });
   final TextEditingController amount;
   final int ways;
   final bool isPayee;
+  final String currency;
 
   @override
   State<_Preview> createState() => _PreviewState();
@@ -356,7 +389,10 @@ class _PreviewState extends State<_Preview> {
   @override
   Widget build(BuildContext context) {
     final minor = Money.tryParseToMinor(widget.amount.text) ?? 0;
-    final per = minor ~/ widget.ways;
+    // A crib without active members has nobody to split with. The divisor is
+    // guarded, because `0 ~/ 0` throws an IntegerDivisionByZeroException.
+    final ways = widget.ways;
+    final per = ways > 0 ? minor ~/ ways : 0;
     final active = minor > 0;
     return Container(
       width: double.infinity,
@@ -384,8 +420,10 @@ class _PreviewState extends State<_Preview> {
             child: Text(
               active
                   ? (widget.isPayee
-                        ? '${Money.format(minor, 'INR')} goes to the payee'
-                        : '${Money.format(per, 'INR')} each · split ${widget.ways} ways')
+                        ? '${Money.format(minor, widget.currency)} goes to the payee'
+                        : ways > 0
+                              ? '${Money.format(per, widget.currency)} each · split $ways ways'
+                              : 'Nobody to split with yet — invite someone first')
                   : 'Enter an amount to preview shares',
               style: AppTypography.label.copyWith(
                 color: active

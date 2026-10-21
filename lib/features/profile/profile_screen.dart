@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:paycal/core/settings/app_settings.dart';
+import 'package:paycal/core/notifications/push_notification_service.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
@@ -110,6 +112,18 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  /// Turns the server's refusal into something the member can act on.
+  ///
+  /// The account can only go when it owns no active crib. The server says so
+  /// in backend wording; the member needs the next step.
+  String _deleteAccountMessage(RepositoryException error) {
+    if (error.message.toLowerCase().contains('crib')) {
+      return 'You still own a crib. Delete it from the crib menu first, '
+          'then delete your account.';
+    }
+    return error.message;
+  }
+
   Future<void> _accountDetails(BuildContext context) async {
     await showPopCard<void>(
       context: context,
@@ -175,7 +189,8 @@ class ProfileScreen extends StatelessWidget {
             label: 'PayCal updates',
             support: 'Know the second someone settles up',
             value: AppSettings.instance.notificationsOn,
-            onChanged: (v) => AppSettings.instance.update(notificationsOn: v),
+            onChanged: (v) =>
+                unawaited(PushNotificationService.instance.setEnabled(v)),
           ),
         ],
       ),
@@ -411,66 +426,97 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: AppSpacing.xxl),
-                GestureDetector(
-                  onTap: () => _editProfile(context),
-                  child: PartyTap(
-                    child: AnimatedContainer(
-                      duration: Duration(milliseconds: 500),
-                      curve: Curves.easeOutBack,
-                      padding: EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        color: PartyMode.instance.identityCard,
-                        border: Border.all(color: AppColors.ink, width: 2),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Row(
-                        children: [
-                          Avatar(initials: initials, size: 56),
-                          SizedBox(width: AppSpacing.lg),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        AppSettings.instance.userName,
-                                        style: AppTypography.titleSmall
-                                            .copyWith(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                      ),
+                PartyTap(
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.easeOutBack,
+                    padding: EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: PartyMode.instance.identityCard,
+                      border: Border.all(color: AppColors.ink, width: 2),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Row(
+                      children: [
+                        Avatar(initials: initials, size: 56),
+                        SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      AppSettings.instance.userName,
+                                      style: AppTypography.titleSmall
+                                          .copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w800,
+                                          ),
                                     ),
-                                    if (PartyMode.instance.isOn) ...[
-                                      SizedBox(width: AppSpacing.sm),
+                                  ),
+                                  if (PartyMode.instance.isOn) ...[
+                                    SizedBox(width: AppSpacing.sm),
+                                    Icon(
+                                      Icons.local_fire_department_rounded,
+                                      color: AppPalette.current.lime,
+                                      size: 18,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              Text(
+                                AppSettings.instance.userEmail,
+                                style: AppTypography.body.copyWith(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              // The edit control sits *inside* the party tap so
+                              // that its own gesture wins the arena: a nested
+                              // detector deeper in the tree takes the tap, the
+                              // outer party detector never sees it.
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _editProfile(context),
+                                child: Container(
+                                  margin: EdgeInsets.only(top: AppSpacing.sm),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppPalette.current.lime,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: AppColors.ink,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
                                       Icon(
-                                        Icons.local_fire_department_rounded,
-                                        color: AppPalette.current.lime,
-                                        size: 18,
+                                        Icons.edit_outlined,
+                                        size: 13,
+                                        color: AppColors.ink,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Tap to edit profile',
+                                        style: AppTypography.caption.copyWith(
+                                          color: AppColors.ink,
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                       ),
                                     ],
-                                  ],
-                                ),
-                                Text(
-                                  AppSettings.instance.userEmail,
-                                  style: AppTypography.body.copyWith(
-                                    color: Colors.white70,
                                   ),
                                 ),
-                                Text(
-                                  'Tap to edit profile',
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppPalette.current.lime,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -545,7 +591,7 @@ class ProfileScreen extends StatelessWidget {
                         );
                       } on RepositoryException catch (error) {
                         if (context.mounted) {
-                          showAppToast(context, error.message);
+                          showAppToast(context, _deleteAccountMessage(error));
                         }
                       } catch (_) {
                         if (context.mounted) {

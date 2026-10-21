@@ -73,9 +73,7 @@ void main() {
     expect(world.store.cribs.single.memberById('me')!.role, MemberRole.owner);
   });
 
-  testWidgets('the crib editor adds a member through the repository', (
-    tester,
-  ) async {
+  testWidgets('the crib editor hands out an invite link', (tester) async {
     final world = TestHarness();
     PayCalRepositories.instance = world.repositories;
     final crib = await world.repositories.cribs.getById('c1');
@@ -89,24 +87,19 @@ void main() {
     expect(find.text('Edit crib'), findsOneWidget);
     expect(find.text('Asha'), findsOneWidget);
 
-    final addSomeone = find.text('Add someone');
-    await tester.ensureVisible(addSomeone);
+    final inviteSomeone = find.text('Invite someone');
+    await tester.ensureVisible(inviteSomeone);
     await tester.pumpAndSettle();
-    await tester.tap(addSomeone);
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).last, 'Zoya');
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(PrimaryButton, 'Add'));
+    await tester.tap(inviteSomeone);
     await tester.pumpAndSettle();
 
-    expect(
-      world.store.cribs.single.members.map((member) => member.name),
-      contains('Zoya'),
-    );
+    // The owner gets a private link. People join with it, so no name is
+    // typed in and no membership is faked.
+    expect(find.text('Share invite link'), findsOneWidget);
+    expect(world.store.invitations, hasLength(1));
     expect(
       world.store.activity.map((event) => event.action),
-      contains('member_added'),
+      contains('invitation_created'),
     );
   });
 

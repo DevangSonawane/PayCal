@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
@@ -5,6 +7,7 @@ import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/widgets/pinstripe_rules.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
 import 'package:paycal/core/widgets/quiet_text_button.dart';
+import 'package:paycal/core/notifications/push_notification_service.dart';
 import 'package:paycal/features/onboarding/first_crib_screen.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 
@@ -15,7 +18,10 @@ class NotificationsPage extends StatelessWidget {
 
   final OnboardingDraft draft;
 
-  void _go(BuildContext context) {
+  void _go(BuildContext context, {bool enableNotifications = false}) {
+    if (enableNotifications) {
+      unawaited(PushNotificationService.instance.requestPermissionAndEnable());
+    }
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => FirstCribScreen(draft: draft)),
       (r) => r.isFirst,
@@ -105,7 +111,7 @@ class NotificationsPage extends StatelessWidget {
                 const Spacer(),
                 PrimaryButton(
                   label: 'Turn on notifications',
-                  onPressed: () => _go(context),
+                  onPressed: () => _go(context, enableNotifications: true),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Center(

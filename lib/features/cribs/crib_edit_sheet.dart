@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:paycal/core/config/app_config.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
@@ -14,7 +13,7 @@ import 'package:paycal/core/widgets/sticker_pill.dart';
 import 'package:paycal/data/in_memory_repositories.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/data/repositories.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:paycal/features/cribs/invite_link_sheet.dart';
 
 /// Long-press editor for a crib: rename, currency, members, invite links,
 /// and delete.
@@ -170,78 +169,29 @@ Future<void> showCribEdit(
                 ],
               ),
             ),
-          if (isOwner)
-            OptionTile(
-            title: 'Add someone',
-            support: 'They join the crib right away',
-            onTap: () async {
-              final nameCtrl = TextEditingController();
-              final added = await showPopCard<String>(
-                context: dialogContext,
-                title: 'Add member',
-                builder: (_) => AppTextField(
-                  label: 'Name or nickname',
-                  controller: nameCtrl,
-                ),
-                footer: PrimaryButton(
-                  label: 'Add',
-                  onPressed: () {
-                    if (nameCtrl.text.trim().isEmpty) {
-                      showAppToast(dialogContext, 'Give them a name');
-                      return;
-                    }
-                    Navigator.of(dialogContext).pop(nameCtrl.text.trim());
-                  },
-                ),
-              );
-              if (added == null || added.isEmpty) return;
-              final id = 'u${DateTime.now().millisecondsSinceEpoch}';
-              try {
-                final updated = await repositories.cribs.addMember(
-                  cribId: current.id,
-                  member: Member(id: id, name: added),
-                );
-                if (!context.mounted) return;
-                setPopState(() => current = updated);
-                onDone?.call();
-              } on RepositoryException catch (error) {
-                if (context.mounted) showAppToast(context, error.message);
-              }
-            },
-          ),
           if (isOwner) const SizedBox(height: AppSpacing.sm),
           if (isOwner)
             OptionTile(
-            title: 'Share invite link',
+            title: 'Invite someone',
             support: 'A private link that expires in 7 days',
+            leading: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppPalette.current.lime,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppPalette.current.ink, width: 1.5),
+              ),
+              child: Icon(
+                Icons.link_rounded,
+                size: 18,
+                color: AppPalette.current.ink,
+              ),
+            ),
             onTap: () async {
-              try {
-                final invitation = await repositories.invitations.create(
-                  cribId: current.id,
-                  createdById: meId,
-                  expiresAt: DateTime.now().add(
-                    AppConfig.invitationLifetime,
-                  ),
-                );
-                final link = AppConfig.invitationLink(invitation.token);
-                if (!context.mounted) return;
-                setPopState(() => invitations = [...invitations, invitation]);
-                try {
-                  await SharePlus.instance.share(
-                    ShareParams(
-                      text:
-                          'Join my crib "${current.name}" on PayCal: $link',
-                      title: 'PayCal invite',
-                    ),
-                  );
-                } catch (_) {
-                  if (context.mounted) {
-                    showAppToast(context, 'Invite link ready to share');
-                  }
-                }
-              } on RepositoryException catch (error) {
-                if (context.mounted) showAppToast(context, error.message);
-              }
+              // People join through a link, not through a name typed here:
+              // only somebody with a real account can become a member.
+              await showInviteLinkSheet(context, crib: current);
             },
           ),
           if (invitations.isNotEmpty) ...[

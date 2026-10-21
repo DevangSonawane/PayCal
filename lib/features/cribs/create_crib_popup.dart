@@ -10,15 +10,15 @@ import 'package:paycal/data/models.dart';
 import 'package:paycal/data/in_memory_repositories.dart';
 import 'package:paycal/data/repositories.dart';
 
-/// Opens the themed "Create crib" pop-up. Returns true if a crib was
-/// created so the caller can refresh its list.
-Future<bool> showCreateCrib(BuildContext context) async {
-  final created = await showPopCard<bool>(
+/// Opens the themed "Create crib" pop-up. Returns the new crib so the caller
+/// can hand out an invite link right away.
+Future<Crib?> showCreateCrib(BuildContext context) async {
+  final created = await showPopCard<Crib>(
     context: context,
     title: 'Create crib',
     builder: (dialogContext) => _CreateCribForm(),
   );
-  return created ?? false;
+  return created;
 }
 
 class _CreateCribForm extends StatefulWidget {
@@ -30,41 +30,24 @@ class _CreateCribForm extends StatefulWidget {
 
 class _CreateCribFormState extends State<_CreateCribForm> {
   final name = TextEditingController();
-  final member = TextEditingController();
-
-  /// The creator is added by the repository as the owner, so only the extra
-  /// members are collected here.
-  final members = <Member>[];
   var currency = 'INR';
   static const _currencies = ['INR', 'USD', 'EUR'];
-
-  void _addMember() {
-    final text = member.text.trim();
-    if (text.isEmpty) return;
-    if (members.any((m) => m.name.toLowerCase() == text.toLowerCase())) {
-      showAppToast(context, 'Already a member');
-      return;
-    }
-    setState(() {
-      members.add(
-        Member(id: 'm${DateTime.now().millisecondsSinceEpoch}', name: text),
-      );
-      member.clear();
-    });
-  }
 
   Future<void> _create() async {
     if (name.text.trim().isEmpty) {
       showAppToast(context, 'The crib needs a name first');
       return;
     }
+    Crib created;
     try {
-      await PayCalRepositories.instance.cribs.create(
+      // People are not typed in here. They join through an invite link, so
+      // the repository adds the creator as the owner and nobody else.
+      created = await PayCalRepositories.instance.cribs.create(
         Crib(
           id: 'b${DateTime.now().millisecondsSinceEpoch}',
           name: name.text.trim(),
           currency: currency,
-          members: List.of(members),
+          members: const [],
           categories: ['food', 'transport', 'rent', 'groceries', 'other'],
         ),
       );
@@ -73,7 +56,7 @@ class _CreateCribFormState extends State<_CreateCribForm> {
       return;
     }
     if (!mounted) return;
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(created);
   }
 
   @override
@@ -101,36 +84,33 @@ class _CreateCribFormState extends State<_CreateCribForm> {
         ],
       ),
       SizedBox(height: AppSpacing.lg),
-      _miniLabel('Members'),
-      Wrap(
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.sm,
-        children: [
-          for (final m in members)
-            _memberChip(m, removable: true),
-        ],
-      ),
-      SizedBox(height: AppSpacing.md),
-      AppTextField(
-        label: 'Add a member',
-        hint: "Friend's name…",
-        controller: member,
-        textInputAction: TextInputAction.done,
-        onFieldSubmitted: (_) => _addMember(),
-        suffix: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: _addMember,
-          child: Container(
-            width: 34,
-            height: 34,
-            margin: EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: AppPalette.current.lime,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppPalette.current.ink, width: 1.5),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppPalette.current.lime,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppPalette.current.ink, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.link_rounded,
+              color: AppPalette.current.ink,
+              size: 22,
             ),
-            child: Icon(Icons.person_add_alt_1, color: AppColors.ink, size: 18),
-          ),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                'Next you get a private invite link. Share it and everybody '
+                'joins with their own account.',
+                style: AppTypography.label.copyWith(
+                  color: AppPalette.current.ink,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       SizedBox(height: AppSpacing.lg),
@@ -173,50 +153,6 @@ class _CreateCribFormState extends State<_CreateCribForm> {
           color: selected ? Colors.white : AppPalette.current.ink,
         ),
       ),
-    ),
-  );
-
-  Widget _memberChip(Member m, {required bool removable}) => Container(
-    padding: EdgeInsets.symmetric(
-      horizontal: AppSpacing.md + 2,
-      vertical: AppSpacing.sm + 2,
-    ),
-    decoration: BoxDecoration(
-      color: AppPalette.current.card,
-      borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: AppPalette.current.ink, width: 1.5),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          m.name,
-          style: AppTypography.caption.copyWith(
-            color: AppPalette.current.ink,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        if (removable) ...[
-          SizedBox(width: AppSpacing.sm),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => setState(() => members.remove(m)),
-            child: Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                color: AppPalette.current.chip,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.close_rounded,
-                size: 12,
-                color: AppPalette.current.ink,
-              ),
-            ),
-          ),
-        ],
-      ],
     ),
   );
 }

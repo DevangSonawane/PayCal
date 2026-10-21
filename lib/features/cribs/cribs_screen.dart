@@ -17,6 +17,7 @@ import 'package:paycal/domain/financial_ledger.dart';
 import 'package:paycal/features/cribs/crib_detail_screen.dart';
 import 'package:paycal/features/cribs/crib_edit_sheet.dart';
 import 'package:paycal/features/cribs/create_crib_popup.dart';
+import 'package:paycal/features/cribs/invite_link_sheet.dart';
 
 enum _Filter { all, owed, owe, settled }
 
@@ -67,10 +68,12 @@ class _CribsScreenState extends State<CribsScreen> {
 
   Future<void> _onCreate() async {
     final created = await showCreateCrib(context);
-    if (created && mounted) {
-      setState(() {});
-      showQuirkyConfirm(context, 'All set! Crib created');
-    }
+    if (created == null || !mounted) return;
+    setState(() {});
+    showQuirkyConfirm(context, 'All set! Crib created');
+    // A new crib has nobody in it yet, so the invite link is the very next
+    // step: it is how people get in.
+    await showInviteLinkSheet(context, crib: created);
   }
 
   @override

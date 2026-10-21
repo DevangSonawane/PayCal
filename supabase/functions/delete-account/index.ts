@@ -45,12 +45,13 @@ Deno.serve(
       .eq('id', userId)
     if (profileError) return json({ error: 'Could not anonymise the profile.' }, 500)
 
-    const { error: signOutError } = await admin.auth.admin.signOut(userId, 'global')
-    if (signOutError) return json({ error: 'Could not revoke sessions.' }, 500)
-
     // Keep auth.users and public.profiles intact: financial rows reference the
     // profile. An indefinite ban prevents reauthentication pending the product
     // and legal retention decisions documented in ACCOUNT_DELETION.md.
+    //
+    // The ban is also what ends the sessions: GoTrue refuses every refresh of
+    // a banned account. The admin sign-out call of the auth API is gone from
+    // GoTrue, so it is not used here.
     const { error: banError } = await admin.auth.admin.updateUserById(userId, {
       ban_duration: '876000h',
     })
