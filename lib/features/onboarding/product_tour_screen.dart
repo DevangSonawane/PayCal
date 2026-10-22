@@ -31,14 +31,14 @@ class _ProductTourScreenState extends State<ProductTourScreen> {
     _TourSlide(
       eyebrow: 'NO MENTAL MATHS',
       title: 'Add it once. We split it fairly.',
-      body: 'Log dinner, rent, taxis, and more. Choose the people involved and PayCal keeps each share clear.',
+      body: 'Log dinner, rent, taxis, and more. Choose the people involved and Tabbb keeps each share clear.',
       accent: AppColors.pink,
       icon: Icons.call_split_rounded,
     ),
     _TourSlide(
       eyebrow: 'LESS CHASING PEOPLE',
       title: 'Settle up with the fewest transfers.',
-      body: 'When it is time to square up, PayCal works out who pays whom so your group can move on.',
+      body: 'When it is time to square up, Tabbb works out who pays whom so your group can move on.',
       accent: AppColors.lime,
       icon: Icons.done_all_rounded,
     ),

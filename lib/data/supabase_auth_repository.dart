@@ -275,7 +275,7 @@ class SupabaseAuthRepository implements AuthRepository {
                       .isNotEmpty ==
                   true
               ? user.userMetadata!['display_name'] as String
-              : user.email?.split('@').first ?? 'PayCal member',
+              : user.email?.split('@').first ?? 'Tabbb member',
           email: user.email ?? '',
           hasPassword: _hasPassword(user),
         );

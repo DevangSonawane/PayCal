@@ -108,7 +108,7 @@ class DeepLinks {
     final context = navigator.context;
     showPopCard<void>(
       context: context,
-      title: 'PayCal user',
+      title: 'Tabbb user',
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +238,7 @@ class DeepLinks {
       context: context,
       title: 'You are invited',
       builder: (_) => Text(
-        'Someone invited you to a PayCal crib. Create an account or sign in '
+        'Someone invited you to a Tabbb crib. Create an account or sign in '
         'to join. Your invitation is saved on this device until then.',
         style: AppTypography.body.copyWith(color: AppPalette.current.grey),
       ),

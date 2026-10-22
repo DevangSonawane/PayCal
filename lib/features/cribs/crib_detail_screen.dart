@@ -12,7 +12,6 @@ import 'package:paycal/core/widgets/amount_field.dart';
 import 'package:paycal/core/widgets/app_bottom_sheet.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
 import 'package:paycal/core/widgets/app_toast.dart';
-import 'package:paycal/core/widgets/confirm_sheet.dart';
 import 'package:paycal/core/widgets/quirky_confirm.dart';
 import 'package:paycal/core/widgets/money_text.dart';
 import 'package:paycal/core/widgets/option_tile.dart';
@@ -26,6 +25,7 @@ import 'package:paycal/domain/financial_ledger.dart';
 import 'package:paycal/domain/recurring_scheduler.dart';
 import 'package:paycal/features/expenses/expense_detail_screen.dart';
 import 'package:paycal/features/expenses/split_share_editor.dart';
+import 'package:paycal/features/cribs/crib_membership_actions.dart';
 import 'package:paycal/features/cribs/invite_link_sheet.dart';
 import 'package:paycal/features/settlements/settle_up_sheet.dart';
 
@@ -424,11 +424,40 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
                 ),
               ),
               onTap: _activeMembers.any((member) => member.id != _meId)
-                  ? () {
+                  ? () async {
                       Navigator.of(sheetContext).pop();
-                      _showTransferOwnershipSheet(crib);
+                      final handed = await CribMembershipActions
+                          .transferOwnership(context, crib);
+                      if (handed) setState(() {});
                     }
                   : null,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            OptionTile(
+              title: 'Delete this crib',
+              support: 'The crib disappears for everybody, history is kept',
+              leading: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _DPalette.current.card,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _DPalette.current.ink, width: 1.5),
+                ),
+                child: Icon(
+                  Icons.delete_forever_rounded,
+                  size: 18,
+                  color: _DPalette.current.ink,
+                ),
+              ),
+              onTap: () async {
+                Navigator.of(sheetContext).pop();
+                final deleted = await CribMembershipActions.deleteCrib(
+                  context,
+                  crib,
+                );
+                if (deleted && context.mounted) Navigator.of(context).pop();
+              },
             ),
           ] else ...[
             const SizedBox(height: AppSpacing.sm),
@@ -449,9 +478,10 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
                   color: _DPalette.current.ink,
                 ),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.of(sheetContext).pop();
-                _leaveCrib(crib);
+                final left = await CribMembershipActions.leave(context, crib);
+                if (left && context.mounted) Navigator.of(context).pop();
               },
             ),
           ],
@@ -624,96 +654,6 @@ class _CribDetailScreenState extends State<CribDetailScreen> {
       if (!mounted) return;
       showAppToast(context, 'Could not export the history of ${crib.name}');
     }
-  }
-
-  /// Hands the crib over to another member of the crib.
-  Future<void> _showTransferOwnershipSheet(Crib crib) async {
-    final candidates = crib.activeMembers
-        .where((member) => member.id != _meId)
-        .toList(growable: false);
-    if (candidates.isEmpty) {
-      showAppToast(context, 'Invite somebody first');
-      return;
-    }
-    Member? chosen;
-    await showAppBottomSheet<void>(
-      context: context,
-      title: 'Hand over ${crib.name}',
-      builder: (sheetContext) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'The new owner can invite people, change the crib and delete it. '
-            'You stay a member of the crib.',
-            style: AppTypography.caption.copyWith(
-              color: _DPalette.current.grey,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          for (final member in candidates)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: OptionTile(
-                title: member.name,
-                support: 'Member of ${crib.name}',
-                onTap: () {
-                  chosen = member;
-                  Navigator.of(sheetContext).pop();
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-    final newOwner = chosen;
-    if (newOwner == null || !mounted) return;
-    final confirmed = await showConfirmSheet(
-      context: context,
-      title: 'Hand over ${crib.name}?',
-      body: '${newOwner.name} becomes the Crib Owner of ${crib.name}. '
-          'You stay a member and keep your own history.',
-      confirmLabel: 'Hand it over',
-    );
-    if (confirmed != true) return;
-    try {
-      await PayCalRepositories.instance.cribs.transferOwnership(
-        cribId: crib.id,
-        newOwnerId: newOwner.id,
-      );
-    } on RepositoryException catch (error) {
-      if (mounted) showAppToast(context, error.message);
-      return;
-    }
-    if (!mounted) return;
-    setState(() {});
-    showAppToast(context, '${newOwner.name} is the new Crib Owner');
-  }
-
-  /// Leaves the crib.
-  ///
-  /// The member keeps their history and their share of what was already
-  /// spent, but is never charged again.
-  Future<void> _leaveCrib(Crib crib) async {
-    final confirmed = await showConfirmSheet(
-      context: context,
-      title: 'Leave ${crib.name}?',
-      body: 'You stop taking part in ${crib.name}. What you already paid for '
-          'and what you still owe stay in the history. The owner can invite '
-          'you back later.',
-      confirmLabel: 'Leave the crib',
-      destructive: true,
-    );
-    if (confirmed != true) return;
-    try {
-      await PayCalRepositories.instance.cribs.leave(crib.id);
-    } on RepositoryException catch (error) {
-      if (mounted) showAppToast(context, error.message);
-      return;
-    }
-    if (!mounted) return;
-    showAppToast(context, 'You left ${crib.name}');
-    Navigator.of(context).pop();
   }
 
   void _showAddActions() {    _showFormDialog(

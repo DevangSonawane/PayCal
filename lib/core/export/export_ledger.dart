@@ -33,8 +33,8 @@ Future<void> shareCribHistory(Crib crib) async {
           name: 'paycal-${_fileName(crib.name)}.pdf',
         ),
       ],
-      title: '${crib.name} · PayCal',
-      subject: '${crib.name} · PayCal history',
+      title: '${crib.name} · Tabbb',
+      subject: '${crib.name} · Tabbb history',
     ),
   );
 }

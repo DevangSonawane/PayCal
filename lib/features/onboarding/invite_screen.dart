@@ -314,8 +314,8 @@ class _InviteScreenState extends State<InviteScreen> {
                     try {
                       await SharePlus.instance.share(
                         ShareParams(
-                          text: 'Join my crib on PayCal: $link',
-                          subject: 'PayCal invite',
+                          text: 'Join my crib on Tabbb: $link',
+                          subject: 'Tabbb invite',
                         ),
                       );
                     } catch (_) {

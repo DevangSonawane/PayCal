@@ -128,7 +128,7 @@ class SupabaseCribRepository implements CribRepository {
       final id = item['user_id'] as String;
       return Member(
         id: id,
-        name: profile?['display_name'] as String? ?? 'PayCal member',
+        name: profile?['display_name'] as String? ?? 'Tabbb member',
         role: id == row['owner_id'] ? MemberRole.owner : MemberRole.member,
         isActive: item['left_at'] == null,
         leftAt: item['left_at'] == null

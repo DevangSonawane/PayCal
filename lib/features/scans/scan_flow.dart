@@ -114,7 +114,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
       }
       final member = _memberFromPayload(raw);
       if (member == null) {
-        _hint('Not a PayCal code - keep scanning');
+        _hint('Not a Tabbb code - keep scanning');
         continue;
       }
       _camera?.stop();
@@ -250,7 +250,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
         Text(
           manualEntry
               ? 'Paste a paycal:// code to find your friend.'
-              : 'Point your camera at their PayCal code.',
+              : 'Point your camera at their Tabbb code.',
           style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
         ),
         if (!manualEntry)
@@ -291,7 +291,7 @@ class _ScanFlowBodyState extends State<_ScanFlowBody> {
       key: ValueKey('manual'),
       children: [
         AppTextField(
-          label: 'PayCal code',
+          label: 'Tabbb code',
           hint: 'paycal://user/friend-id',
           controller: codeController,
           keyboardType: TextInputType.url,

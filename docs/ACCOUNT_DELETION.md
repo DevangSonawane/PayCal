@@ -14,13 +14,12 @@ define how long anything is kept.
 
 ### 1. The account itself
 
-- The account is deactivated or deleted, and its sessions and device tokens
+- The Auth account is permanently deleted, and its sessions and device tokens
   are revoked immediately.
 - The user id is immutable and never reused, so audit records that point at it
   stay readable after the display name is gone.
-- Whether the account is soft-deleted (deactivated, then removed later) or
-  hard-deleted is **not decided**. A backend decision is required, because it
-  determines how a re-registration is handled.
+- Whether a removed person may re-register with the same email is a product
+  and fraud-prevention decision; the old Auth account no longer exists.
 
 ### 2. Shared financial history
 
@@ -57,7 +56,7 @@ define how long anything is kept.
 | Question | Why it is open |
 | --- | --- |
 | Retention period of financial records | A legal obligation, not a product choice. |
-| Retention period of a deactivated account | Depends on the same legal review. |
+| Retention period of anonymised profile data | Depends on the same legal review. |
 | Export requirements (for example a data download) | Depends on jurisdiction. |
 | Region-specific deletion obligations | Depends on the markets the app ships in. |
 | Whether an anonymised label is kept forever or re-randomised | Depends on the fraud-handling requirement. |
@@ -72,11 +71,26 @@ legal/privacy task, and the implementation must follow whatever it produces.
 
 ## What is implemented
 
-- `supabase/functions/delete-account` closes the memberships, anonymises the
-  profile, revokes the pending invitations and bans the account. GoTrue
-  removed the admin sign-out endpoint, so the ban is what invalidates the
-  sessions: every refresh of a banned account is refused with `user_banned`.
-  An account that still owns an active crib is refused with `409`, and the
-  profile screen turns that into the next step for the member.
+- `supabase/functions/delete-account` closes memberships, anonymises the
+  profile, revokes pending invitations, then permanently deletes the matching
+  `auth.users` record. The anonymised profile remains because shared financial
+  history references it.
+- An account that only takes part in a crib leaves it as part of the deletion:
+  `crib_members.left_at` is set (the history of the member stays reachable)
+  and the response lists the cribs it left in `left`.
+- An account that still owns an active crib is refused with `409` and
+  `{ "error": "...", "blocked": [{ "id", "name" }] }`. The crib has to be
+  handed over or deleted first, because a crib must never end up without an
+  owner. The response is idempotent: repeating the call after the ban repeats
+  the same updates and returns the same result.
+- The profile screen turns that refusal into the next step for the member: a
+  popup lists every crib that still keeps the account and offers Leave, Hand
+  over or Delete per crib. The account is only confirmed for deletion once no
+  crib is left.
+- The same three actions are discoverable from the crib itself: the group
+  details sheet offers "Hand over this crib", "Leave this crib" and, for the
+  owner, "Delete this crib". Both screens share
+  `lib/features/cribs/crib_membership_actions.dart`, so the confirmation and
+  the refusal handling cannot drift apart.
 - `AuthRepository.deleteAccount()` calls the function, and the profile screen
-  offers the entry point behind a confirmation sheet.
+  offers the entry point behind the popup above.

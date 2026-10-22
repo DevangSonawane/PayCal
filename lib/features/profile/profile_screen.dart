@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:paycal/core/settings/app_settings.dart';
 import 'package:paycal/core/notifications/push_notification_service.dart';
 import 'package:paycal/core/theme/app_colors.dart';
+import 'package:paycal/core/theme/app_radii.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
@@ -15,6 +16,7 @@ import 'package:paycal/core/widgets/money_text.dart';
 import 'package:paycal/core/widgets/party_tap.dart';
 import 'package:paycal/core/widgets/pop_card.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
+import 'package:paycal/core/widgets/secondary_button.dart';
 import 'package:paycal/core/widgets/sticker_pill.dart';
 import 'package:paycal/core/widgets/wedge_loader.dart';
 import 'package:paycal/core/utils/party_mode.dart';
@@ -23,6 +25,8 @@ import 'package:paycal/data/models.dart';
 import 'package:paycal/data/in_memory_repositories.dart';
 import 'package:paycal/data/repositories.dart';
 import 'package:paycal/domain/financial_ledger.dart';
+import 'package:paycal/features/cribs/crib_membership_actions.dart';
+import 'package:paycal/features/cribs/invite_link_sheet.dart';
 import 'package:paycal/features/onboarding/welcome_screen.dart';
 
 const _currencies = ['INR', 'USD', 'EUR', 'GBP'];
@@ -114,14 +118,199 @@ class ProfileScreen extends StatelessWidget {
 
   /// Turns the server's refusal into something the member can act on.
   ///
-  /// The account can only go when it owns no active crib. The server says so
-  /// in backend wording; the member needs the next step.
+  /// The account can only go when it is not in a crib any more. The server
+  /// says so in backend wording; the member needs the next step.
   String _deleteAccountMessage(RepositoryException error) {
     if (error.message.toLowerCase().contains('crib')) {
-      return 'You still own a crib. Hand it over to somebody else or delete '
-          'it from the crib menu first, then delete your account.';
+      return 'You are still in a crib. Leave it, or hand over the ones you '
+          'own, and then your account can go.';
     }
     return error.message;
+  }
+
+  /// The cribs that keep the account from being deleted.
+  ///
+  /// A crib the member has already left does not count, and a deleted crib
+  /// does not either.
+  Future<List<Crib>> _cribsBlockingDeletion() async {
+    final meId = PayCalRepositories.instance.auth.currentUser?.id;
+    final cribs = await PayCalRepositories.instance.cribs.list();
+    return cribs
+        .where(
+          (crib) =>
+              !crib.isDeleted &&
+              crib.activeMembers.any((member) => member.id == meId),
+        )
+        .toList(growable: false);
+  }
+
+  /// Asks the member to get out of the cribs they are still in.
+  ///
+  /// A member that only takes part leaves the crib on their own. A member
+  /// that owns a crib cannot leave it: the crib has to be handed over or
+  /// deleted first, so a crib never ends up without an owner.
+  ///
+  /// Returns whether the member is out of every crib.
+  Future<bool> _getOutOfTheCribs(BuildContext context) async {
+    final meId = PayCalRepositories.instance.auth.currentUser?.id;
+    var blockers = await _cribsBlockingDeletion();
+    if (!context.mounted) return false;
+
+    final ready = await showPopCard<bool>(
+      context: context,
+      title: 'Leave the cribs first',
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'An account can only go when it is not in a crib any more. Leave '
+              'the cribs below, or hand over the ones you own, and your '
+              'account can be deleted.',
+              style: AppTypography.body.copyWith(
+                color: AppPalette.current.ink,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            for (final crib in blockers) ...[
+              _cribBlocker(context, crib, meId, () async {
+                blockers = await _cribsBlockingDeletion();
+                setState(() {});
+              }),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            if (blockers.isEmpty) ...[
+              PrimaryButton(
+                label: 'Delete my account',
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+    return ready == true;
+  }
+
+  /// One crib that keeps the account from being deleted, with the ways out.
+  Widget _cribBlocker(
+    BuildContext context,
+    Crib crib,
+    String? meId,
+    Future<void> Function() onChanged,
+  ) {
+    final owns = crib.isOwnedBy(meId ?? '');
+    final others = crib.activeMembers
+        .where((member) => member.id != meId)
+        .toList(growable: false);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppPalette.current.card,
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        border: Border.all(color: AppPalette.current.ink, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            crib.name,
+            style: AppTypography.titleSmall.copyWith(
+              color: AppPalette.current.ink,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            owns ? 'You are the Crib Owner' : 'You are a member',
+            style: AppTypography.caption.copyWith(color: AppPalette.current.grey),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (owns) ...[
+            SecondaryButton(
+              label: others.isEmpty
+                  ? 'Invite / Hand Over'
+                  : 'Hand Over',
+              onPressed: () async {
+                if (others.isEmpty) {
+                  await showInviteLinkSheet(context, crib: crib);
+                  return;
+                }
+                final handed = await CribMembershipActions.transferOwnership(
+                  context,
+                  crib,
+                );
+                if (handed) await onChanged();
+              },
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            SecondaryButton(
+              label: 'Delete this crib',
+              onPressed: () async {
+                final deleted = await CribMembershipActions.deleteCrib(
+                  context,
+                  crib,
+                );
+                if (deleted) await onChanged();
+              },
+            ),
+          ] else
+            SecondaryButton(
+              label: 'Leave this crib',
+              onPressed: () async {
+                final left = await CribMembershipActions.leave(context, crib);
+                if (left) await onChanged();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Deletes the account.
+  ///
+  /// A member that is still in a crib is asked to get out of it first: the
+  /// account is only deleted once no crib keeps it.
+  Future<void> _deleteAccount(BuildContext context) async {
+    List<Crib> blockers;
+    try {
+      blockers = await _cribsBlockingDeletion();
+    } on RepositoryException catch (error) {
+      if (context.mounted) showAppToast(context, error.message);
+      return;
+    }
+    if (!context.mounted) return;
+    if (blockers.isNotEmpty) {
+      final ready = await _getOutOfTheCribs(context);
+      if (!ready || !context.mounted) return;
+    }
+    final ok = await showConfirmSheet(
+      context: context,
+      title: 'Delete account?',
+      body: 'This anonymises your profile. Outstanding balances stay visible '
+          'to others.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await PayCalRepositories.instance.auth.deleteAccount();
+      await AppSettings.instance.clearIdentity();
+      if (!context.mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        (r) => false,
+      );
+    } on RepositoryException catch (error) {
+      if (context.mounted) {
+        showAppToast(context, _deleteAccountMessage(error));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        showAppToast(context, 'Unable to delete the account.');
+      }
+    }
   }
 
   Future<void> _accountDetails(BuildContext context) async {
@@ -186,7 +375,7 @@ class ProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _ToggleRow(
-            label: 'PayCal updates',
+            label: 'Tabbb updates',
             support: 'Know the second someone settles up',
             value: AppSettings.instance.notificationsOn,
             onChanged: (v) =>
@@ -239,7 +428,7 @@ class ProfileScreen extends StatelessWidget {
 
   Future<void> _terms(BuildContext context) =>
       _staticPop(context, 'Terms and Privacy', [
-        'PayCal is a demo app; all data lives on your device.',
+        'Tabbb is a demo app; all data lives on your device.',
         'Deleting a crib removes shared pending expenses for everyone.',
         'Flagged expenses keep the paper trail, so nobody gaslights you.',
       ]);
@@ -570,39 +759,7 @@ class ProfileScreen extends StatelessWidget {
                   ('Terms and Privacy', () => _terms(context)),
                 ]),
                 GestureDetector(
-                  onTap: () async {
-                    final ok = await showConfirmSheet(
-                      context: context,
-                      title: 'Delete account?',
-                      body: 'This anonymises your profile. Outstanding balances stay visible to others.',
-                      confirmLabel: 'Delete',
-                      destructive: true,
-                    );
-                    if (ok == true && context.mounted) {
-                      try {
-                        await PayCalRepositories.instance.auth.deleteAccount();
-                        await AppSettings.instance.clearIdentity();
-                        if (!context.mounted) return;
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => const WelcomeScreen(),
-                          ),
-                          (r) => false,
-                        );
-                      } on RepositoryException catch (error) {
-                        if (context.mounted) {
-                          showAppToast(context, _deleteAccountMessage(error));
-                        }
-                      } catch (_) {
-                        if (context.mounted) {
-                          showAppToast(
-                            context,
-                            'Unable to delete the account.',
-                          );
-                        }
-                      }
-                    }
-                  },
+                  onTap: () => _deleteAccount(context),
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: Text(

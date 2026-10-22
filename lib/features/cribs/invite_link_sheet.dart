@@ -58,8 +58,8 @@ Future<void> showInviteLinkSheet(
         try {
           await SharePlus.instance.share(
             ShareParams(
-              text: 'Join "${crib.name}" on PayCal: $link',
-              subject: 'PayCal invite',
+              text: 'Join "${crib.name}" on Tabbb: $link',
+              subject: 'Tabbb invite',
             ),
           );
         } catch (_) {

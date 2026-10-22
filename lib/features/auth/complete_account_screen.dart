@@ -145,7 +145,7 @@ class _CompleteAccountScreenState extends State<CompleteAccountScreen> {
                     readOnly: true,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  AppTextField(
+                  PasswordTextField(
                     label: 'Password (optional)',
                     hint: 'Sign in with your email later',
                     controller: _password,
@@ -154,7 +154,6 @@ class _CompleteAccountScreenState extends State<CompleteAccountScreen> {
                       if (password.isEmpty) return null;
                       return Validators.password(password);
                     },
-                    obscureText: true,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   PrimaryButton(

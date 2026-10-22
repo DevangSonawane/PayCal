@@ -16,7 +16,7 @@ void main() {
   testWidgets('welcome screen renders', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: WelcomeScreen()));
     await tester.pumpAndSettle();
-    expect(find.text('PayCal'), findsOneWidget);
+    expect(find.text('Tabbb'), findsOneWidget);
     expect(find.text('Get started'), findsOneWidget);
   });
 

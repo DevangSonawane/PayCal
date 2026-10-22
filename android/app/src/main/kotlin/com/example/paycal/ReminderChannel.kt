@@ -20,7 +20,7 @@ object ReminderChannel {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             ID,
-            "PayCal reminders",
+            "Tabbb reminders",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
             description = "Reminders and updates about the cribs you share."

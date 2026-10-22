@@ -22,7 +22,7 @@ class SupabaseActivityRepository implements ActivityRepository {
           final action = row['action'] as String;
           return ActivityEvent(
             title: action.replaceAll('_', ' '),
-            subtitle: 'Recorded securely in PayCal',
+            subtitle: 'Recorded securely in Tabbb',
             time: '',
             cribName: crib?['name'] as String? ?? 'Crib',
             cribId: row['crib_id'] as String,

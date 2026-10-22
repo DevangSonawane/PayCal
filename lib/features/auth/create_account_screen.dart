@@ -52,9 +52,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   Future<void> _continue() async {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EmailSignUpScreen(draft: widget.draft),
-      ),
+      MaterialPageRoute(builder: (_) => EmailSignUpScreen(draft: widget.draft)),
     );
   }
 
@@ -62,7 +60,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     if (!AppConfig.hasSupabaseConfiguration ||
         !PayCalRepositories.instance.isRemote) {
       _showError(
-        'The PayCal backend is not available in this build. Run with .env.json.',
+        'The Tabbb backend is not available in this build. Run with .env.json.',
       );
       return;
     }
@@ -383,12 +381,11 @@ class _EmailSignUpScreenState extends State<EmailSignUpScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                AppTextField(
+                PasswordTextField(
                   label: 'Password',
                   hint: 'Choose a secure password',
                   controller: _password,
                   validator: Validators.password,
-                  obscureText: true,
                 ),
                 const SizedBox(height: AppSpacing.xxl),
                 PrimaryButton(

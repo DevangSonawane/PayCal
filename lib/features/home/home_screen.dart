@@ -56,10 +56,12 @@ class _HomeScreenState extends State<HomeScreen> {
       .where((e) => e.cribId == b.id)
       .fold<int>(0, (sum, e) => sum + e.totalMinor);
 
-  int paidBy(String memberId) =>
-      PayCalRepositories.instance.expenses.cachedExpenses
-          .where((e) => e.payerId == memberId)
-          .fold<int>(0, (sum, e) => sum + e.totalMinor);
+  int paidBy(String memberId) => PayCalRepositories
+      .instance
+      .expenses
+      .cachedExpenses
+      .where((e) => e.payerId == memberId)
+      .fold<int>(0, (sum, e) => sum + e.totalMinor);
 
   void toast(String s) {
     showAppToast(context, '$s is coming soon.');
@@ -93,8 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? balancesByCurrency.keys.single
         : null;
     final meId = PayCalRepositories.instance.currentUserId;
-    final meName =
-        PayCalRepositories.instance.auth.currentUser?.name ?? 'You';
+    final meName = PayCalRepositories.instance.auth.currentUser?.name ?? 'You';
     final contacts = PayCalRepositories.instance.cribs.cachedCribs.isEmpty
         ? <Member>[]
         : PayCalRepositories.instance.cribs.cachedCribs.first.members
@@ -227,7 +228,7 @@ class _TopBar extends StatelessWidget {
       ),
       SizedBox(width: 8),
       Text(
-        'PayCal',
+        'Tabbb',
         style: AppTypography.title.copyWith(
           fontSize: 24,
           fontWeight: FontWeight.w800,
@@ -526,10 +527,10 @@ class _HeroCardState extends State<_HeroCard> {
                 await SharePlus.instance.share(
                   ShareParams(
                     text:
-                        'Pay and split with me on PayCal — '
+                        'Pay and split with me on Tabbb — '
                         'scan this code or open the link: '
                         'paycal://user/${PayCalRepositories.instance.currentUserId}',
-                    title: 'My PayCal code',
+                    title: 'My Tabbb code',
                   ),
                 );
               },

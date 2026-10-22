@@ -107,3 +107,53 @@ class AppTextField extends StatelessWidget {
     );
   }
 }
+
+/// A password field with Tabbb's slightly wonky peek control.
+class PasswordTextField extends StatefulWidget {
+  const PasswordTextField({
+    super.key,
+    required this.label,
+    required this.controller,
+    this.hint,
+    this.validator,
+  });
+
+  final String label;
+  final String? hint;
+  final TextEditingController controller;
+  final FormFieldValidator<String>? validator;
+
+  @override
+  State<PasswordTextField> createState() => _PasswordTextFieldState();
+}
+
+class _PasswordTextFieldState extends State<PasswordTextField> {
+  bool _obscured = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppTextField(
+      label: widget.label,
+      hint: widget.hint,
+      controller: widget.controller,
+      validator: widget.validator,
+      obscureText: _obscured,
+      suffix: Tooltip(
+        message: _obscured ? 'Show password' : 'Hide password',
+        child: IconButton(
+          onPressed: () => setState(() => _obscured = !_obscured),
+          icon: Transform.rotate(
+            angle: _obscured ? -0.16 : 0.16,
+            child: Icon(
+              _obscured
+                  ? Icons.visibility_rounded
+                  : Icons.visibility_off_rounded,
+              color: AppPalette.current.purple,
+            ),
+          ),
+          splashRadius: 20,
+        ),
+      ),
+    );
+  }
+}

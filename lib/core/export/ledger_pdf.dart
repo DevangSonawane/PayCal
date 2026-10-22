@@ -49,8 +49,8 @@ class LedgerPdf {
     final yourBalance = balances[memberId] ?? 0;
 
     final document = pw.Document(
-      title: '${crib.name} · PayCal',
-      author: 'PayCal',
+      title: '${crib.name} · Tabbb',
+      author: 'Tabbb',
     );
 
     document.addPage(
@@ -69,7 +69,7 @@ class LedgerPdf {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                'PayCal · ${crib.name} · generated ${DateFormat('d MMM yyyy').format(DateTime.now())}',
+                'Tabbb · ${crib.name} · generated ${DateFormat('d MMM yyyy').format(DateTime.now())}',
                 style: pw.TextStyle(font: regular, fontSize: 8, color: _grey),
               ),
               pw.Text(
@@ -117,7 +117,7 @@ class LedgerPdf {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'PayCal',
+            'Tabbb',
             style: pw.TextStyle(font: bold, fontSize: 11, color: _grey),
           ),
           pw.SizedBox(height: 6),

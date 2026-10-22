@@ -41,17 +41,22 @@ class SecondaryButton extends StatelessWidget {
             ),
           ).copyWith(animationDuration: AppMotion.fast),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (leading != null) ...[
                 leading!,
                 const SizedBox(width: AppSpacing.sm),
               ],
-              Text(
-                label,
-                style: AppTypography.label.copyWith(
-                  color: AppPalette.current.ink,
-                  fontWeight: FontWeight.w800,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.label.copyWith(
+                    color: AppPalette.current.ink,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],

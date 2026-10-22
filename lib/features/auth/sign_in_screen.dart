@@ -57,7 +57,7 @@ class _SignInScreenState extends State<SignInScreen> {
     if (!AppConfig.hasSupabaseConfiguration ||
         !PayCalRepositories.instance.isRemote) {
       _showError(
-        'The PayCal backend is not available in this build. Run with .env.json.',
+        'The Tabbb backend is not available in this build. Run with .env.json.',
       );
       return;
     }
@@ -258,11 +258,10 @@ class _SignInScreenState extends State<SignInScreen> {
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  AppTextField(
+                  PasswordTextField(
                     label: 'Password',
                     hint: 'Your password',
                     controller: _password,
-                    obscureText: true,
                     validator: Validators.password,
                   ),
                   Align(

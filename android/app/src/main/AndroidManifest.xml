@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:label="PayCal"
+        android:label="Tabbb"
         android:name="com.devangsonawane.paycal.PayCalApplication"
         android:icon="@mipmap/ic_launcher">
         <!-- A message that names no channel of its own lands on the channel
