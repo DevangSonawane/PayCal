@@ -17,7 +17,6 @@ import 'package:paycal/features/auth/notifications_sheet.dart';
 import 'package:paycal/features/onboarding/onboarding_draft.dart';
 import 'package:paycal/data/in_memory_repositories.dart';
 import 'package:paycal/data/repositories.dart';
-import 'package:paycal/core/config/app_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -57,8 +56,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   Future<void> _continueWithGoogle() async {
-    if (!AppConfig.hasSupabaseConfiguration ||
-        !PayCalRepositories.instance.isRemote) {
+    if (!PayCalRepositories.instance.isRemote) {
       _showError(
         'The Tabbb backend is not available in this build. Run with .env.json.',
       );

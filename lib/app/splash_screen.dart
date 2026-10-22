@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/utils/deep_link.dart';
+import 'package:paycal/core/settings/app_settings.dart';
 import 'package:paycal/features/onboarding/welcome_screen.dart';
 import 'package:paycal/features/shell/main_shell.dart';
 import 'package:paycal/features/auth/auth_identity.dart';
@@ -50,14 +51,20 @@ class _SplashScreenState extends State<SplashScreen>
           // The shell remains usable and exposes retry paths if the network
           // is temporarily unavailable during launch.
         }
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainShell()),
+        );
+      } else {
+        if (!mounted) return;
+        await AppSettings.instance.load();
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const WelcomeScreen(),
+          ),
+        );
       }
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) =>
-              user == null ? const WelcomeScreen() : const MainShell(),
-        ),
-      );
       // The link that started the app is handled now, when the app is on
       // screen and the member can be asked to sign in.
       await Future<void>.delayed(const Duration(milliseconds: 600));

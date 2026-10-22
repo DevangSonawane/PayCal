@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:paycal/app/paycal_app.dart';
+import 'package:paycal/core/settings/app_settings.dart';
 import 'package:paycal/domain/balance_engine.dart';
 
 void main() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await AppSettings.instance.load();
+  });
+
   test('equal split assigns remainder to payer', () {
     final shares = BalanceEngine.equalSplit(
       totalMinor: 1000,

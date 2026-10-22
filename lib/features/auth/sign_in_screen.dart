@@ -5,7 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
-import 'package:paycal/core/config/app_config.dart';
 import 'package:paycal/core/utils/validators.dart';
 import 'package:paycal/core/widgets/app_text_field.dart';
 import 'package:paycal/core/widgets/primary_button.dart';
@@ -54,8 +53,7 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _continueWithGoogle() async {
-    if (!AppConfig.hasSupabaseConfiguration ||
-        !PayCalRepositories.instance.isRemote) {
+    if (!PayCalRepositories.instance.isRemote) {
       _showError(
         'The Tabbb backend is not available in this build. Run with .env.json.',
       );

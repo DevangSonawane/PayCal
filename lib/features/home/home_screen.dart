@@ -228,7 +228,7 @@ class _TopBar extends StatelessWidget {
       ),
       SizedBox(width: 8),
       Text(
-        'Tabbb',
+        'Dashboard',
         style: AppTypography.title.copyWith(
           fontSize: 24,
           fontWeight: FontWeight.w800,

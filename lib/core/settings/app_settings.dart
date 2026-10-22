@@ -35,11 +35,17 @@ class AppSettings extends ChangeNotifier {
   static String symbolForCode(String code) => symbols[code] ?? code;
 
   static const _key = 'paycal_app_settings_v1';
+  static const _onboardingSeenKey = 'onboarding_seen';
+  SharedPreferences? _prefs;
 
   Future<void> load() async {
-    final sp = await SharedPreferences.getInstance();
+    _prefs = await SharedPreferences.getInstance();
+    final sp = _prefs!;
     final raw = sp.getString(_key);
-    if (raw == null) return;
+    if (raw == null) {
+      notifyListeners();
+      return;
+    }
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
       userName = json['userName'] as String? ?? userName;
@@ -107,6 +113,19 @@ class AppSettings extends ChangeNotifier {
     userName = 'You';
     userEmail = '';
     await save();
+    notifyListeners();
+  }
+
+  /// Whether the product tour/onboarding was shown at least once.
+  bool get hasSeenOnboarding {
+    if (_prefs == null) return false;
+    return _prefs!.getBool(_onboardingSeenKey) ?? false;
+  }
+
+  /// Marks onboarding as completed/seen.
+  Future<void> setOnboardingSeen() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setBool(_onboardingSeenKey, true);
     notifyListeners();
   }
 

@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="#D8FF00" />
-
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/tabbb_launch_logo" />
-    </item>
+    <!-- Match Flutter's first splash frame. The animated Flutter splash owns
+         the logo, so Android must not display a separate launch image. -->
+    <item android:drawable="@drawable/tabbb_splash_background" />
 </layer-list>

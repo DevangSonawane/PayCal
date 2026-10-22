@@ -13,15 +13,13 @@ Future<void> main() async {
   // A link that starts the app never reaches the link stream, so it is read
   // here and handed over once the app is on screen.
   await DeepLinks.captureInitialLink();
-  if (AppConfig.hasSupabaseConfiguration) {
-    await Supabase.initialize(
-      url: AppConfig.supabaseUrl,
-      publishableKey: AppConfig.supabasePublishableKey,
-    );
-    PayCalRepositories.instance = PayCalRepositories.supabase(
-      Supabase.instance.client,
-    );
-    await PushNotificationService.instance.initialize(Supabase.instance.client);
-  }
+  await Supabase.initialize(
+    url: AppConfig.supabaseUrl,
+    publishableKey: AppConfig.supabasePublishableKey,
+  );
+  PayCalRepositories.instance = PayCalRepositories.supabase(
+    Supabase.instance.client,
+  );
+  await PushNotificationService.instance.initialize(Supabase.instance.client);
   runApp(const PayCalApp());
 }

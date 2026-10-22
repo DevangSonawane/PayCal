@@ -1,0 +1,5 @@
+steps:
+  - launch: com.devangsonawane.paycal
+  - await: { visible: { text: "Tabbb" } }
+  - tap: { text: "Profile" }
+  - await: { idle: true }

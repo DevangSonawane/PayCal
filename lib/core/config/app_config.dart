@@ -8,8 +8,7 @@ class AppConfig {
   /// The project URL and the *publishable* key are safe to ship in a client
   /// app: the publishable key only grants the `anon` role and every table is
   /// protected by row level security. They are baked in so that a plain
-  /// `flutter run` talks to the real backend instead of silently falling back
-  /// to the offline prototype.
+  /// `flutter run` talks to the real backend.
   ///
   /// A build can still override them, for example:
   /// `flutter run --dart-define-from-file=.env.json`.
@@ -23,9 +22,6 @@ class AppConfig {
     'SUPABASE_PUBLISHABLE_KEY',
     defaultValue: 'sb_publishable_DAGtAFWaC1Id7k01uhH5Ag_bBh9UXoJ',
   );
-
-  static bool get hasSupabaseConfiguration =>
-      supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
 
   /// Whether the app talks to Firebase Cloud Messaging.
   ///

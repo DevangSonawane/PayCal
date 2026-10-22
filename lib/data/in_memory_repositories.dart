@@ -1,4 +1,3 @@
-import 'package:paycal/data/mock_data.dart';
 import 'package:paycal/data/models.dart';
 import 'package:paycal/data/repositories.dart';
 import 'package:paycal/data/supabase_auth_repository.dart';
@@ -14,8 +13,10 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
 
 import 'dart:math';
 
-/// Shared in-memory storage. It deliberately has no Flutter dependency and is
-/// also the seam a future API/cache implementation will replace.
+/// Test-only in-memory storage.
+///
+/// Production always uses [PayCalRepositories.supabase]. Tests construct this
+/// store explicitly with the data required for that test.
 class InMemoryStore {
   InMemoryStore({
     required this.cribs,
@@ -30,17 +31,12 @@ class InMemoryStore {
        invitations = invitations ?? <Invitation>[],
        occurrences = occurrences ?? <RecurringOccurrence>[];
 
-  factory InMemoryStore.prototype() => InMemoryStore(
-    cribs: MockData.cribs,
-    expenses: MockData.expenses,
-    settlements: MockData.settlements,
-    activity: MockData.activity,
-    currentUser: AuthUser(
-      id: MockData.meId,
-      name: MockData.me.name,
-      email: 'you@example.com',
-    ),
-    schedules: MockData.recurringPayments,
+  factory InMemoryStore.empty() => InMemoryStore(
+    cribs: <Crib>[],
+    expenses: <Expense>[],
+    settlements: <Settlement>[],
+    activity: <ActivityEvent>[],
+    currentUser: null,
   );
 
   final List<Crib> cribs;
@@ -92,21 +88,17 @@ class PayCalRepositories {
   factory PayCalRepositories.forStore(InMemoryStore store) =>
       PayCalRepositories._inMemory(store);
 
-  factory PayCalRepositories.prototype() =>
-      PayCalRepositories._inMemory(InMemoryStore.prototype());
+  /// An empty bundle for widget tests that do not need backend data.
+  ///
+  /// This is never selected by the application entrypoint.
+  factory PayCalRepositories.emptyForTests() =>
+      PayCalRepositories._inMemory(InMemoryStore.empty());
 
   /// The production bundle.  The in-memory store stays empty solely to keep
   /// the existing test seam available; no production read or write uses it.
   factory PayCalRepositories.supabase(SupabaseClient client) {
-    final emptyStore = InMemoryStore(
-      cribs: <Crib>[],
-      expenses: <Expense>[],
-      settlements: <Settlement>[],
-      activity: <ActivityEvent>[],
-      currentUser: null,
-    );
     return PayCalRepositories._(
-      store: emptyStore,
+      store: InMemoryStore.empty(),
       auth: SupabaseAuthRepository(client),
       cribs: SupabaseCribRepository(client),
       expenses: SupabaseExpenseRepository(client),
@@ -120,7 +112,7 @@ class PayCalRepositories {
     );
   }
 
-  static PayCalRepositories _instance = PayCalRepositories.prototype();
+  static PayCalRepositories _instance = PayCalRepositories.emptyForTests();
 
   /// The repository set the app talks to.
   // ignore: unnecessary_getters_setters

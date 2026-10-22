@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:paycal/core/settings/app_settings.dart';
 import 'package:paycal/core/theme/app_colors.dart';
 import 'package:paycal/core/theme/app_spacing.dart';
 import 'package:paycal/core/theme/app_typography.dart';
@@ -44,7 +45,9 @@ class _ProductTourScreenState extends State<ProductTourScreen> {
     ),
   ];
 
-  void _finish() {
+  void _finish() async {
+    await AppSettings.instance.setOnboardingSeen();
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const OnboardingFlow()),
     );
