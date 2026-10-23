@@ -1,4 +1,4 @@
-const APP_ROOT = "/Users/devangsonawane/paycal";
+const APP_ROOT = "/Users/devangsonawane/paycal/tabb/app";
 
 export default {
   appRoot: APP_ROOT,
