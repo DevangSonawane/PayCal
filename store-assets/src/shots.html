@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="kit.css"><script src="kit.js"></script>
+<style>
+body{width:1080px;height:1920px;overflow:hidden;position:relative}
+.slide{position:absolute;inset:0;overflow:hidden}
+.kicker{position:absolute;left:84px;top:110px;font:700 26px Space;letter-spacing:3px;text-transform:uppercase;display:flex;align-items:center;gap:14px}
+.kicker i{width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--lime);display:grid;place-items:center;font:800 22px Brico;font-style:normal;letter-spacing:0}
+h1.head{position:absolute;left:80px;right:80px;top:178px;font:800 104px/0.98 Brico;letter-spacing:-3px}
+h1.head u{text-decoration:none;background:var(--hl,#fff);color:var(--ink);padding:0 14px;border-radius:18px;border:4px solid var(--ink);display:inline-block;transform:rotate(-2deg);line-height:1.05}
+.sub{position:absolute;left:84px;right:120px;top:430px;font:500 34px/1.3 Space;opacity:.85}
+.ph{position:absolute;left:50%;top:545px;transform-origin:top center}
+.blob{position:absolute;border-radius:50%}
+.penny{position:absolute;filter:drop-shadow(0 20px 30px rgba(0,0,0,.25))}
+.sticker{position:absolute;color:var(--ink);background:#fff;border:4px solid var(--ink);border-radius:40px;padding:18px 28px;font:800 34px Brico;box-shadow:8px 8px 0 var(--ink);white-space:nowrap}
+.grain{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.035) 0 2px,transparent 2px 9px);pointer-events:none}
+.slide[style*="color:#fff"] .kicker i{background:var(--lime);color:var(--ink)}
+</style>
+<div id="root"></div>
+<script>
+const n=+(location.hash.slice(1)||1);
+const P=(name,scale=1.46,rot=0,x=0)=>`<div class="ph" style="transform:translateX(calc(-50% + ${x}px)) rotate(${rot}deg) scale(${scale})">${phone(name)}</div>`;
+const slides={
+1:{bg:'var(--lime)',hl:'var(--pink)',k:'Tabbb',head:'Your crew.<br><u style="color:#fff">One tab.</u>',sub:'Split bills, keep friendships. The shared-money app for flats, trips & squads.',
+  extra:`<div class="blob" style="width:520px;height:520px;background:var(--purple);right:-200px;top:-140px"></div>
+  ${P('home',1.46,-4,-110)}
+  <div class="sticker" style="right:40px;top:1480px;transform:rotate(-5deg);background:var(--lime)">Flats · trips · squads</div>
+  <div class="sticker" style="right:40px;top:930px;transform:rotate(6deg);background:var(--pink);color:#fff">No mental maths ✌️</div>`},
+2:{bg:'var(--pink)',hl:'var(--lime)',k:'Add an expense',head:'Add it once.<br><u>We split it.</u>',sub:'Pop in the amount, tap who\'s in. Tabbb does the maths — equal or custom.',fg:'#fff',
+  extra:`${P('add',1.46,0,40)}<div class="sticker" style="right:24px;top:1580px;transform:rotate(-6deg)">₹612.50 each 🍕</div>`},
+3:{bg:'var(--purple)',hl:'var(--lime)',k:'Cribs',head:'One tab<br>per <u>crib.</u>',sub:'Your flat, the Goa trip, office lunches — each group gets its own clean tab.',
+  extra:`${P('cribs',1.46,3,110)}<div class="sticker" style="left:36px;top:1790px;transform:rotate(-5deg);background:var(--pink);color:#fff">3 cribs, 0 drama 🏠</div>`},
+4:{bg:'var(--ink)',hl:'var(--lime)',k:'Settle up',head:'Fewest moves<br>to <u>square up.</u>',sub:'Tabbb works out the smallest number of transfers so nobody chases anybody.',fg:'#fff',
+  extra:`<div class="blob" style="width:700px;height:700px;background:var(--pink);left:-260px;bottom:-260px;opacity:.9"></div>${P('settle',1.46,0,-40)}
+  <div class="sticker" style="right:36px;top:1790px;transform:rotate(-4deg);background:var(--lime)">2 transfers, done ⚡</div>`},
+5:{bg:'#FFFEFC',hl:'var(--lime)',k:'Payments',head:'Every rupee,<br><u>receipted.</u>',sub:'See who paid what, your share of every bill, and what you\'re owed — at a glance.',
+  extra:`<div class="blob" style="width:640px;height:640px;background:var(--lime);right:-220px;top:700px"></div>${P('detail',1.46,-3,-110)}
+  <div class="sticker" style="right:30px;top:1800px;transform:rotate(4deg);background:var(--purple);color:#fff">Your share, sorted ✓</div>`},
+6:{bg:'var(--lime)',hl:'var(--purple)',k:'Activity',head:'No more<br><u style="color:#fff">“who paid?”</u>',sub:'Every add, edit and settle lands in one feed — the whole crew stays in the loop.',
+  extra:`${P('activity',1.46,0,100)}<div class="sticker" style="left:36px;top:1800px;transform:rotate(-4deg)">Everyone in the loop 👀</div>`},
+};
+const s=slides[n];
+document.getElementById('root').innerHTML=`<div class="slide" style="background:${s.bg};color:${s.fg||'var(--ink)'};--hl:${s.hl}">
+ <div class="grain"></div>${s.extra}
+ <div class="kicker"><i>${n}</i>${s.k}</div><h1 class="head">${s.head}</h1><div class="sub">${s.sub}</div></div>`;
+</script>

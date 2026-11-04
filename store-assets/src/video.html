@@ -1,0 +1,106 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="kit.css"><script src="kit.js"></script>
+<style>
+body{width:1920px;height:1080px;overflow:hidden;position:relative;background:var(--ink)}
+.scene{position:absolute;inset:0;overflow:hidden}
+.grain{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.035) 0 2px,transparent 2px 9px)}
+.blob{position:absolute;border-radius:50%}
+.copy{position:absolute;left:150px;top:300px;width:900px}
+.kick{font:700 30px Space;letter-spacing:4px;text-transform:uppercase;margin-bottom:24px}
+.h{font:800 128px/.98 Brico;letter-spacing:-4px}
+.h .w{display:inline-block}
+.h u{text-decoration:none;display:inline-block;background:var(--hl);color:var(--ink);border:5px solid var(--ink);border-radius:22px;padding:0 18px;margin-top:10px}
+.sub{font:500 38px/1.3 Space;margin-top:34px;max-width:780px}
+.ph{position:absolute;left:1180px;top:80px;transform-origin:center top}
+.penny{position:absolute;filter:drop-shadow(0 24px 34px rgba(0,0,0,.28))}
+.sticker{position:absolute;z-index:10;color:var(--ink);background:#fff;border:5px solid var(--ink);border-radius:50px;padding:20px 34px;font:800 44px Brico;box-shadow:10px 10px 0 var(--ink);white-space:nowrap}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.logo{display:flex;align-items:center;gap:28px;font:800 170px Brico;letter-spacing:-6px}
+.logo img{width:190px;height:190px;border-radius:48px;border:6px solid var(--ink);box-shadow:12px 12px 0 var(--ink)}
+.play{display:inline-flex;align-items:center;gap:18px;background:var(--ink);color:#fff;border-radius:24px;padding:20px 38px;font:700 34px Space;margin-top:50px}
+</style>
+<div id="stage"></div>
+<script>
+// ---------- helpers ----------
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const P=(t,a,b)=>clamp((t-a)/(b-a));
+const oc=x=>1-Math.pow(1-x,3);
+const ob=x=>{const c=1.70158,d=c+1;return 1+d*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const lerp=(a,b,x)=>a+(b-a)*x;
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const words=html=>html.split('<br>').map(line=>line.replace(/(<u[^>]*>.*?<\/u>)|([^\s<]+)/g,(m,u,w)=>`<span class="w">${u||w}</span>`)).join('<br>');
+
+// ---------- scenes ----------
+const SC=[
+ {id:'intro',a:0,b:3.2,bg:'var(--lime)',html:`<div class="grain"></div>
+   <div class="blob b1" style="width:900px;height:900px;background:var(--purple);right:-300px;top:-380px"></div>
+   <div class="blob b2" style="width:600px;height:600px;background:var(--pink);left:-220px;bottom:-300px"></div>
+   <div class="center"><div class="logo"><img src="img/app_icon.png">Tabbb</div>
+   <div class="sub tagline" style="font:700 52px Brico;margin-top:30px;max-width:none">Split bills. Keep the vibes.</div></div>`},
+ {id:'home',a:3.2,b:7,bg:'var(--lime)',hl:'var(--pink)',fg:'var(--ink)',phone:'home',k:'Meet Tabbb',h:'Your crew.<br><u style="color:#fff">One tab.</u>',s:'Every shared rupee with your flatmates, trips and squads — in one place.',
+   extra:`<div class="blob" style="width:760px;height:760px;background:var(--purple);right:-160px;top:160px"></div>`},
+ {id:'add',a:7,b:11.4,bg:'var(--pink)',hl:'var(--lime)',fg:'#fff',phone:'add',k:'Add an expense',h:'Add it once.<br><u>We split it.</u>',s:'Pop in the amount, tap who\'s in. Tabbb does the maths.',
+   extra:`<div class="sticker st" style="left:870px;top:820px">₹612.50 each 🍕</div>`},
+ {id:'cribs',a:11.4,b:15.4,bg:'var(--purple)',hl:'var(--lime)',fg:'var(--ink)',phone:'cribs',k:'Cribs',h:'One tab<br>per <u>crib.</u>',s:'Your flat, the Goa trip, office lunches — each gets its own clean tab.',
+   extra:`<div class="sticker st" style="left:820px;top:860px;background:var(--pink);color:#fff">3 cribs, 0 drama 🏠</div>`},
+ {id:'settle',a:15.4,b:19.6,bg:'var(--ink)',hl:'var(--lime)',fg:'#fff',phone:'settle',k:'Settle up',h:'Fewest moves<br>to <u>square up.</u>',s:'Tabbb finds the smallest number of transfers. Nobody chases anybody.',
+   extra:`<div class="blob" style="width:820px;height:820px;background:var(--pink);right:-200px;bottom:-420px"></div>`},
+ {id:'activity',a:19.6,b:23.4,bg:'#FFFEFC',hl:'var(--lime)',fg:'var(--ink)',phone:'activity',k:'Activity',h:'No more<br><u>“who paid?”</u>',s:'Every add, edit and settle lands in one feed for the whole crew.',
+   extra:`<div class="blob" style="width:820px;height:820px;background:var(--lime);right:-160px;top:120px"></div>
+   <div class="sticker st" style="left:840px;top:860px">Everyone in the loop 👀</div>`},
+ {id:'end',a:23.4,b:28,bg:'var(--lime)',html:`<div class="grain"></div>
+   <div class="blob b1" style="width:800px;height:800px;background:var(--purple);left:-300px;top:-340px"></div>
+   <div class="blob b2" style="width:640px;height:640px;background:var(--pink);right:-200px;bottom:-320px"></div>
+   <div class="center"><div class="logo"><img src="img/app_icon.png">Tabbb</div>
+   <div class="sub tagline" style="font:700 56px Brico;margin-top:24px;max-width:none">Split bills, keep friendships.</div>
+   <div class="play"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M4 2.5v19l17-9.5Z" fill="#D8FF00"/></svg>Get it on Google Play</div></div>`},
+];
+const stage=$('#stage');
+SC.forEach((s,i)=>{
+  const el=document.createElement('div');el.className='scene';el.id=s.id;el.style.background=s.bg;el.style.zIndex=i;
+  el.innerHTML=s.html||`<div class="grain"></div>${s.extra||''}
+    <div class="copy" style="color:${s.fg};--hl:${s.hl}"><div class="kick">${s.k}</div><div class="h">${words(s.h)}</div><div class="sub">${s.s}</div></div>
+    <div class="ph">${phone(s.phone)}</div>`;
+  stage.appendChild(el);s.el=el;
+});
+
+// ---------- per-scene phone choreography ----------
+const fx={
+  home(el,l){const amt=$('[data-amt]',el);const v=oc(P(l,.6,1.8))*2340.5;amt.textContent='₹'+v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    $$('.person',el).forEach((p,i)=>{const x=ob(P(l,1.2+i*.12,1.7+i*.12));p.style.transform=`scale(${x})`;p.style.opacity=clamp(x)});
+    const g=$('.graff',el);const x=ob(P(l,1.9,2.4));g.style.transform=`rotate(-3deg) scale(${lerp(1.6,1,x)})`;g.style.opacity=clamp(x*1.4);
+    const a=$('.act',el);a.style.transform=`translateY(${lerp(60,0,oc(P(l,2.3,2.8)))}px)`;a.style.opacity=P(l,2.3,2.7);},
+  add(el,l){const sh=$('.sheet',el),sc=$('.scrim',el);const x=oc(P(l,.5,1.1));sh.style.transform=`translateY(${(1-x)*110}%)`;sc.style.opacity=x;
+    const am=$('.amount',el);const n=Math.round(oc(P(l,1,1.8))*2450);am.innerHTML=`₹${n.toLocaleString('en-IN')}<span>.00</span>`;
+    $$('.split .ln',el).forEach((r,i)=>{const p=ob(P(l,1.8+i*.25,2.2+i*.25));const c=$('.check',r);c.style.transform=`scale(${p})`;r.style.borderColor=p>.5?'#0A0A0A':'';$('em',r).style.opacity=P(l,1.8+i*.25,2+i*.25)});
+    },
+  cribs(el,l){$$('.crib',el).forEach((c,i)=>{const p=oc(P(l,.6+i*.2,1.2+i*.2));c.style.transform=`translateX(${(1-p)*120}%)`});
+    $$('.stat',el).forEach((c,i)=>{const p=ob(P(l,.4+i*.1,.9+i*.1));c.style.transform=`scale(${p})`});},
+  settle(el,l){const sh=$('.sheet',el),sc=$('.scrim',el);const x=oc(P(l,.7,1.3));sh.style.transform=`translateY(${(1-x)*110}%)`;sc.style.opacity=x;
+    $$('.move',el).forEach((m,i)=>{const p=P(l,1.4+i*.4,2+i*.4);$('.arrow',m).style.clipPath=`inset(0 ${100-p*100}% 0 0)`;$('.av:last-child',m).style.transform=`scale(${ob(P(l,1.8+i*.4,2.1+i*.4))})`});
+    const r=$('.primary',el);const p=P(l,3,3.2)-P(l,3.25,3.45);r.style.transform=`scale(${1-.06*p})`;},
+  activity(el,l){$$('.act',el).forEach((a,i)=>{const p=oc(P(l,.6+i*.22,1.1+i*.22));a.style.transform=`translateY(${(1-p)*80}px)`;a.style.opacity=p});
+    const b=$('.banner',el);b.style.transform=`scale(${ob(P(l,.3,.8))})`;},
+};
+
+function seek(t){
+  SC.forEach((s,i)=>{
+    const el=s.el,l=t-s.a, on=t>=s.a-0.001&&(i===SC.length-1||t<SC[i+1].a+0.6);
+    el.style.display=on?'block':'none';if(!on)return;
+    // enter: circular wipe
+    const w=oc(P(l,0,.6));el.style.clipPath=i===0?'none':`circle(${w*150}% at ${i%2?'85% 15%':'15% 85%'})`;
+    const ph=$('.ph',el);
+    if(ph){const p=oc(P(l,.15,.8));ph.style.transform=`translateY(${(1-p)*700}px) rotate(${lerp(10,i%2?-3:3,p)}deg) scale(1.02)`;
+      $$('.h .w',el).forEach((w,j)=>{const q=oc(P(l,.25+j*.08,.7+j*.08));w.style.transform=`translateY(${(1-q)*90}px)`;w.style.opacity=q});
+      const k=$('.kick',el),sub=$('.sub',el);k.style.opacity=P(l,.2,.5);sub.style.opacity=P(l,.9,1.3);sub.style.transform=`translateY(${(1-oc(P(l,.9,1.3)))*30}px)`;
+      fx[s.id]&&fx[s.id](el,l);}
+    $$('.st',el).forEach((st,j)=>{const q=ob(P(l,2.6,3));st.style.transform=`rotate(${i%2?-6:5}deg) scale(${q})`});
+    $$('.pn',el).forEach(pn=>{const q=ob(P(l,1.2,1.7));pn.style.transform=`${pn.dataset.flip?'scaleX(-1) ':''}translateY(${(1-q)*420}px) rotate(${Math.sin(l*3)*3}deg)`});
+    if(s.id==='intro'||s.id==='end'){const lg=$('.logo',el),tg=$('.tagline',el);const q=ob(P(l,.2,.8));lg.style.transform=`scale(${q})`;tg.style.opacity=P(l,.8,1.2);tg.style.transform=`translateY(${(1-oc(P(l,.8,1.2)))*40}px)`;
+      $$('.blob',el).forEach((b,j)=>b.style.transform=`scale(${oc(P(l,0,1))}) translate(${Math.sin(l+j)*20}px,${Math.cos(l+j)*20}px)`);
+      const pl=$('.play',el);if(pl)pl.style.transform=`scale(${ob(P(l,1.4,1.9))})`;
+      if(s.id==='intro'){const out=oc(P(l,2.6,3.2));el.style.transform=`scale(${1+out*.08})`;}}
+  });
+}
+window.DURATION=SC[SC.length-1].b;
+seek(+(location.hash.slice(1)||0));
+</script>

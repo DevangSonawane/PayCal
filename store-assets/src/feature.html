@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="kit.css"><script src="kit.js"></script>
+<style>
+body{width:1024px;height:500px;overflow:hidden;position:relative;background:var(--lime)}
+.grain{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.035) 0 2px,transparent 2px 8px)}
+.blob{position:absolute;border-radius:50%}
+.copy{position:absolute;left:60px;top:70px;width:480px;z-index:5}
+.brand{display:flex;align-items:center;gap:12px;font:800 30px Brico;margin-bottom:22px}
+.brand img{width:58px;height:58px;border-radius:16px;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+h1{white-space:nowrap;font:800 70px/.98 Brico;letter-spacing:-2.5px}
+h1 u{text-decoration:none;background:var(--pink);color:#fff;border:3.5px solid var(--ink);border-radius:14px;padding:0 12px;display:inline-block;transform:rotate(-2deg);margin-top:6px}
+p{font:600 21px Space;margin-top:22px}
+.ph{position:absolute;transform-origin:top left}
+.penny{position:absolute;filter:drop-shadow(0 14px 20px rgba(0,0,0,.25));z-index:6}
+.sticker{position:absolute;background:#fff;border:3px solid var(--ink);border-radius:30px;padding:9px 18px;font:800 21px Brico;box-shadow:5px 5px 0 var(--ink);z-index:7;white-space:nowrap}
+</style>
+<div class="grain"></div>
+<div class="blob" style="width:560px;height:560px;background:var(--purple);right:-120px;top:-170px"></div>
+<div class="blob" style="width:300px;height:300px;background:var(--pink);right:330px;bottom:-200px"></div>
+<div class="copy">
+  <div class="brand"><img src="img/app_icon.png">Tabbb</div>
+  <h1>Split bills.<br><u>Keep the vibes.</u></h1>
+  <p>Shared money for flats, trips & squads.</p>
+</div>
+<div class="ph" style="left:590px;top:52px;transform:rotate(-8deg) scale(.66)" id="a"></div>
+<div class="ph" style="left:760px;top:40px;transform:rotate(7deg) scale(.66)" id="b"></div>
+<div class="sticker" style="left:62px;top:402px;transform:rotate(-3deg);background:var(--purple);color:#fff">No mental maths ✌️</div>
+<div class="sticker" style="left:565px;top:405px;transform:rotate(-5deg);background:var(--lime)">₹612.50 each ✌️</div>
+<script>a.innerHTML=phone('home');b.innerHTML=phone('cribs');</script>
