@@ -4,6 +4,25 @@
 
 **Audience:** Flatmates, friends on trips, couples, and any group that shares expenses.
 
+## YouTube upload copy
+
+**Title**
+
+Tabbb: Split Bills, Keep Friendships | Shared Expense App
+
+**Description**
+
+Someone pays for dinner. Someone else gets the cab. Then comes the awkward part: “Who owes what?”
+
+Tabbb keeps shared expenses simple. Create a shared tab for your flat, trip, couple, or crew; add an expense, choose who is involved, and let Tabbb split it fairly. When it’s time to settle, Tabbb works out the fewest payments needed to square up.
+
+Split bills. Keep friendships.
+
+Download Tabbb on Google Play:
+https://play.google.com/store/apps/details?id=com.devangsonawane.paycal&hl=en_IN
+
+#Tabbb #SplitBills #ExpenseTracker #SharedExpenses #Flatmates #TravelWithFriends
+
 ## The story
 
 | Time | What viewers see | On-screen copy | Voice-over |
